@@ -99,7 +99,6 @@ struct PopupLayout {
 }
 
 struct PopupView: View {
-    @Namespace private var namespace
     @Environment(UserConfig.self) private var userConfig
     @Binding var isVisible: Bool
     let selectionData: SelectionData?
@@ -153,8 +152,6 @@ struct PopupView: View {
                     )
                     .frame(width: max(1, layout.width), height: max(1, layout.height))
                     .glassEffect(.regular, in: .rect(cornerRadius: 8))
-                    .glassEffectID("popup", in: namespace)
-                    .glassEffectTransition(.materialize)
                     .position(layout.position)
                 }
             }
