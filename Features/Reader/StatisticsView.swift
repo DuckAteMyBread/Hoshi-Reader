@@ -101,6 +101,7 @@ struct StatisticsView: View {
                     Text("All Time")
                 }
             }
+            .monospacedDigit()
             .navigationTitle("Statistics")
             .navigationBarTitleDisplayMode(.inline)
         }
