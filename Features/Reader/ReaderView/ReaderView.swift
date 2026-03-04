@@ -264,6 +264,7 @@ struct ReaderView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
+                            .tracking(-0.4)
                     }
                 }
             }
@@ -285,6 +286,7 @@ struct ReaderView: View {
                 }
             }
             .monospacedDigit()
+            .tracking(-0.4)
         }
         .sheet(item: $viewModel.activeSheet) { item in
             switch item {
