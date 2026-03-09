@@ -712,6 +712,22 @@ function renderStructuredContent(parent, node, language = null, dictName = null)
             return;
         }
         
+        const items = node.map(item =>
+            item?.type === 'structured-content' ? item.content : item
+        );
+        const isLinkArray = items.every(item => item?.tag === 'a');
+        if (isLinkArray && node.length > 1) {
+            const ul = document.createElement('ul');
+            ul.classList.add('glossary-list');
+            node.forEach(child => {
+                const li = document.createElement('li');
+                renderStructuredContent(li, child, language, dictName);
+                ul.appendChild(li);
+            });
+            parent.appendChild(ul);
+            return;
+        }
+        
         node.forEach(child => renderStructuredContent(parent, child, language, dictName));
         return;
     }
