@@ -16,11 +16,12 @@ struct DictionaryView: View {
     @State private var importType: DictionaryType = .term
     @State private var showCSSEditor = false
     @State private var showDownloadConfirmation = false
+    @State private var showUpdateConfirmation = false
     
     var body: some View {
         List {
             Section {
-                Button("Get recommended dictionaries") {
+                Button("Get recommended Dictionaries") {
                     showDownloadConfirmation = true
                 }
                 .disabled(dictionaryManager.isImporting)
@@ -30,7 +31,20 @@ struct DictionaryView: View {
                     }
                     Button("Cancel", role: .cancel) {}
                 } message: {
-                    Text("This will download the latest JMdict Yomitan (Term) and Jiten.moe (Frequency) dictionaries.")
+                    Text("This will download the following Dictionaries:\nJMdict Yomitan (Term)\nJiten.moe (Frequency)")
+                }
+                if (dictionaryManager.updatableDictionaries.count > 0) {
+                    Button("Update Dictionaries") {
+                        showUpdateConfirmation = true
+                    }
+                    .alert("Update Dictionaries", isPresented: $showUpdateConfirmation) {
+                        Button("Update") {
+                            dictionaryManager.updateDictionaries()
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This will check for and install updates for these dictionaries:\n\(dictionaryManager.updatableDictionaries.map(\.0.index.title).joined(separator: "\n"))")
+                    }
                 }
             }
             
@@ -53,10 +67,18 @@ struct DictionaryView: View {
             
             Section("Term Dictionaries") {
                 ForEach(dictionaryManager.termDictionaries) { dict in
-                    Toggle(dict.name, isOn: Binding(
+                    Toggle(isOn: Binding(
                         get: { dict.isEnabled },
                         set: { dictionaryManager.toggleDictionary(id: dict.id, enabled: $0, type: .term) }
-                    ))
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(dict.index.title)
+                            Text(dict.index.revision)
+                                .lineLimit(1)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .onMove { from, to in
                     dictionaryManager.moveDictionary(from: from, to: to, type: .term)
@@ -68,10 +90,18 @@ struct DictionaryView: View {
             
             Section("Frequency Dictionaries") {
                 ForEach(dictionaryManager.frequencyDictionaries) { dict in
-                    Toggle(dict.name, isOn: Binding(
+                    Toggle(isOn: Binding(
                         get: { dict.isEnabled },
                         set: { dictionaryManager.toggleDictionary(id: dict.id, enabled: $0, type: .frequency) }
-                    ))
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(dict.index.title)
+                            Text(dict.index.revision)
+                                .lineLimit(1)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .onMove { from, to in
                     dictionaryManager.moveDictionary(from: from, to: to, type: .frequency)
@@ -83,10 +113,18 @@ struct DictionaryView: View {
             
             Section("Pitch Dictionaries") {
                 ForEach(dictionaryManager.pitchDictionaries) { dict in
-                    Toggle(dict.name, isOn: Binding(
+                    Toggle(isOn: Binding(
                         get: { dict.isEnabled },
                         set: { dictionaryManager.toggleDictionary(id: dict.id, enabled: $0, type: .pitch) }
-                    ))
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(dict.index.title)
+                            Text(dict.index.revision)
+                                .lineLimit(1)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 .onMove { from, to in
                     dictionaryManager.moveDictionary(from: from, to: to, type: .pitch)
@@ -95,9 +133,6 @@ struct DictionaryView: View {
                     dictionaryManager.deleteDictionary(indexSet: indexSet, type: .pitch)
                 }
             }
-        }
-        .onAppear {
-            dictionaryManager.loadDictionaries()
         }
         .sheet(isPresented: $showCSSEditor) {
             DictionaryDetailSettingView()
@@ -134,9 +169,10 @@ struct DictionaryView: View {
                 .fileImporter(
                     isPresented: $isImporting,
                     allowedContentTypes: [.zip],
+                    allowsMultipleSelection: true,
                     onCompletion: { result in
-                        if case .success(let url) = result {
-                            dictionaryManager.importDictionary(from: url, type: importType)
+                        if case .success(let urls) = result {
+                            dictionaryManager.importDictionary(from: urls, type: importType)
                         }
                     }
                 )
@@ -145,7 +181,10 @@ struct DictionaryView: View {
         }
         .overlay {
             if dictionaryManager.isImporting {
-                LoadingOverlay("Importing...")
+                LoadingOverlay("Importing \(dictionaryManager.currentImport)")
+            }
+            if dictionaryManager.isUpdating {
+                LoadingOverlay("Updating \(dictionaryManager.currentImport)")
             }
         }
         .navigationTitle("Dictionaries")

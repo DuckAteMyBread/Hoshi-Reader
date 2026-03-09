@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import CYomitanDicts
+import CHoshiDicts
 
 class LookupEngine {
     static let shared = LookupEngine()
@@ -23,7 +23,7 @@ class LookupEngine {
     func buildQuery(termPaths: [URL], freqPaths: [URL], pitchPaths: [URL]) {
         dictQuery = DictionaryQuery()
         for path in termPaths {
-            dictQuery?.add_dict(std.string(path.path(percentEncoded: false)))
+            dictQuery?.add_term_dict(std.string(path.path(percentEncoded: false)))
         }
         for path in freqPaths {
             dictQuery?.add_freq_dict(std.string(path.path(percentEncoded: false)))
@@ -40,5 +40,10 @@ class LookupEngine {
     
     func getStyles() -> [DictionaryStyle] {
         return Array(dictQuery?.get_styles() ?? [])
+    }
+    
+    func getMediaFile(dictName: String, mediaPath: String) -> Data {
+        let bytes = dictQuery!.get_media_file(std.string(dictName), std.string(mediaPath))
+        return Data(bytes.map { UInt8(bitPattern: $0) })
     }
 }

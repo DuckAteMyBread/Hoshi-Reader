@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import CYomitanDicts
+import CHoshiDicts
 
 struct PopupLayout {
     let selectionRect: CGRect
@@ -182,7 +182,7 @@ struct PopupView: View {
             let expression = String(result.term.expression)
             let reading = String(result.term.reading)
             let matched = String(result.matched)
-            let deinflectionTrace = result.trace.map { DeinflectionTag(name: String($0.name), description: String($0.description)) }
+            let deinflectionTrace = result.trace.reversed().map { DeinflectionTag(name: String($0.name), description: String($0.description)) }
             
             var glossaries: [GlossaryData] = []
             for glossary in result.term.glossaries {
@@ -217,7 +217,7 @@ struct PopupView: View {
                 pitches.append(PitchData(dictionary: String(pitchEntry.dict_name), pitchPositions: pitchPositions))
             }
             
-            let definitionTags = String(result.term.definition_tags).split(separator: " ").map { String($0) }
+            let rules = String(result.term.rules).split(separator: " ").map { String($0) }
             
             entries.append(EntryData(
                 expression: expression,
@@ -227,7 +227,7 @@ struct PopupView: View {
                 glossaries: glossaries,
                 frequencies: frequencies,
                 pitches: pitches,
-                definitionTags: definitionTags
+                rules: rules
             ))
         }
         

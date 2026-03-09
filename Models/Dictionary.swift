@@ -10,14 +10,14 @@ import Foundation
 
 struct DictionaryInfo: Identifiable, Codable {
     let id: UUID
-    let name: String
+    let index: DictionaryIndex
     let path: URL
     var isEnabled: Bool
     var order: Int
     
-    init(id: UUID = UUID(), name: String, path: URL, isEnabled: Bool = true, order: Int = 0) {
+    init(id: UUID = UUID(), index: DictionaryIndex, path: URL, isEnabled: Bool = true, order: Int = 0) {
         self.id = id
-        self.name = name
+        self.index = index
         self.path = path
         self.isEnabled = isEnabled
         self.order = order
@@ -34,6 +34,15 @@ struct DictionaryConfig: Codable {
         var isEnabled: Bool
         var order: Int
     }
+}
+
+nonisolated struct DictionaryIndex: Codable {
+    let title: String
+    let format: Int
+    let revision: String
+    let isUpdatable: Bool
+    let indexUrl: String
+    let downloadUrl: String
 }
 
 struct GlossaryData: Encodable {
@@ -61,7 +70,7 @@ struct EntryData: Encodable {
     let glossaries: [GlossaryData]
     let frequencies: [FrequencyData]
     let pitches: [PitchData]
-    let definitionTags: [String]
+    let rules: [String]
 }
 
 struct DeinflectionTag: Encodable {
