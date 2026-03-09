@@ -15,7 +15,7 @@ struct ChapterListView: View {
     let currentIndex: Int
     let currentCharacter: Int
     let coverURL: URL?
-    let onJumpToChapter: (Int) -> Void
+    let onJumpToChapter: (Int, String?) -> Void
     let onJumpToCharacter: (Int) -> Void
     
     @Environment(\.dismiss) var dismiss
@@ -45,7 +45,7 @@ struct ChapterListView: View {
                     if let vm = viewModel {
                         ForEach(vm.rows) { row in
                             ChapterView(row: row) {
-                                onJumpToChapter(row.spineIndex)
+                                onJumpToChapter(row.spineIndex, row.fragment)
                             }
                         }
                     }
@@ -148,15 +148,15 @@ struct ChapterView: View {
         } label: {
             HStack {
                 Text(row.label)
-                
+                    .font(row.indentLevel > 0 ? .subheadline : .body)
                 Spacer()
-                
                 if let count = row.characterCount {
                     Text("\(count)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
+            .padding(.leading, CGFloat(row.indentLevel) * 16)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -13,8 +13,10 @@ struct ChapterRow: Identifiable {
     let id = UUID()
     let label: String
     let spineIndex: Int
+    let fragment: String?
     let characterCount: Int?
     let isCurrent: Bool
+    let indentLevel: Int
 }
 
 @Observable
@@ -35,27 +37,28 @@ class ChapterListViewModel {
     }
     
     private func generateRows() -> [ChapterRow] {
-        let rawChapters = document.tableOfContents.subTable ?? []
-        var result: [ChapterRow] = []
-        var lastTotal: Int? = nil
-        
-        for item in rawChapters {
-            let count = getCharacterCount(for: item)
-            
-            if count != lastTotal {
-                if let index = findSpineIndex(for: item) {
-                    let row = ChapterRow(
-                        label: item.label,
-                        spineIndex: index,
-                        characterCount: count,
-                        isCurrent: index == currentIndex
-                    )
-                    result.append(row)
-                }
-                lastTotal = count
+        return flattenTOC(document.tableOfContents.subTable ?? [], indentLevel: 0)
+    }
+    
+    private func flattenTOC(_ items: [EPUBTableOfContents], indentLevel: Int) -> [ChapterRow] {
+        items.flatMap { item -> [ChapterRow] in
+            let row: [ChapterRow]
+            if let index = findSpineIndex(for: item) {
+                let parts = item.item?.split(separator: "#", maxSplits: 1)
+                let fragment = (parts?.count ?? 0) > 1 ? String(parts![1]) : nil
+                row = [ChapterRow(
+                    label: item.label,
+                    spineIndex: index,
+                    fragment: fragment,
+                    characterCount: getCharacterCount(for: item),
+                    isCurrent: index == currentIndex,
+                    indentLevel: indentLevel
+                )]
+            } else {
+                row = []
             }
+            return row + flattenTOC(item.subTable ?? [], indentLevel: indentLevel + 1)
         }
-        return result
     }
     
     private func getCharacterCount(for item: EPUBTableOfContents) -> Int? {

@@ -195,9 +195,9 @@ class ReaderViewModel {
         resetTrackingBaseline()
     }
     
-    func jumpToChapter(index: Int) {
+    func jumpToChapter(index: Int, fragment: String? = nil) {
         flushStats()
-        loadChapter(index: index, progress: 0)
+        loadChapter(index: index, progress: 0, fragment: fragment)
         resetTrackingBaseline()
     }
     
@@ -220,9 +220,7 @@ class ReaderViewModel {
         }
         
         loadChapter(index: destination.spineIndex, progress: 0, fragment: destination.fragment)
-        if destination.fragment == nil {
-            resetTrackingBaseline()
-        }
+        resetTrackingBaseline()
         return true
     }
     

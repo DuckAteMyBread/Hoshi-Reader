@@ -297,8 +297,8 @@ struct ReaderView: View {
                     .presentationDetents([.medium])
                     .preferredColorScheme(userConfig.theme == .custom ? userConfig.uiTheme.colorScheme : (userConfig.theme.colorScheme ?? systemColorScheme))
             case .chapters:
-                ChapterListView(document: viewModel.document, bookInfo: viewModel.bookInfo, currentIndex: viewModel.index, currentCharacter: viewModel.currentCharacter, coverURL: viewModel.coverURL) { spineIndex in
-                    viewModel.jumpToChapter(index: spineIndex)
+                ChapterListView(document: viewModel.document, bookInfo: viewModel.bookInfo, currentIndex: viewModel.index, currentCharacter: viewModel.currentCharacter, coverURL: viewModel.coverURL) { spineIndex, fragment in
+                    viewModel.jumpToChapter(index: spineIndex, fragment: fragment)
                     viewModel.activeSheet = nil
                     viewModel.clearWebHighlight()
                     viewModel.closePopups()
