@@ -243,8 +243,8 @@ class ReaderViewModel {
         return true
     }
     
-    func handleTextSelection(_ selection: SelectionData, maxResults: Int, isVertical: Bool) -> Int? {
-        let lookupResults = LookupEngine.shared.lookup(selection.text, maxResults: maxResults)
+    func handleTextSelection(_ selection: SelectionData, maxResults: Int, scanLength: Int, isVertical: Bool) -> Int? {
+        let lookupResults = LookupEngine.shared.lookup(selection.text, maxResults: maxResults, scanLength: scanLength)
         var dictionaryStyles: [String: String] = [:]
         for style in LookupEngine.shared.getStyles() {
             dictionaryStyles[String(style.dict_name)] = String(style.styles)

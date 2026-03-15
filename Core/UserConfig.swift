@@ -47,6 +47,10 @@ class UserConfig {
         didSet { UserDefaults.standard.set(maxResults, forKey: "maxResults") }
     }
     
+    var scanLength: Int {
+        didSet { UserDefaults.standard.set(scanLength, forKey: "scanLength") }
+    }
+    
     var collapseDictionaries: Bool {
         didSet { UserDefaults.standard.set(collapseDictionaries, forKey: "collapseDictionaries") }
     }
@@ -237,7 +241,8 @@ class UserConfig {
         self.bookshelfSortOption = defaults.string(forKey: "bookshelfSortOption")
             .flatMap(SortOption.init) ?? .recent
         
-        self.maxResults = defaults.object(forKey: "maxResults") as? Int ?? 8
+        self.maxResults = defaults.object(forKey: "maxResults") as? Int ?? 16
+        self.scanLength = defaults.object(forKey: "scanLength") as? Int ?? 16
         self.collapseDictionaries = defaults.object(forKey: "collapseDictionaries") as? Bool ?? false
         self.compactGlossaries = defaults.object(forKey: "compactGlossaries") as? Bool ?? true
         

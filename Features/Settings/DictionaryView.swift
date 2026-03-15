@@ -46,6 +46,8 @@ struct DictionaryView: View {
                         Text("This will check for and install updates for these dictionaries:\n\(dictionaryManager.updatableDictionaries.map(\.0.index.title).joined(separator: "\n"))")
                     }
                 }
+            } footer: {
+                Text("Yomitan term, frequency and pitch dictionaries (.zip) are supported")
             }
             
             Section {
@@ -57,12 +59,18 @@ struct DictionaryView: View {
                     Stepper("", value: Bindable(userConfig).maxResults, in: 1...50)
                         .labelsHidden()
                 }
+                HStack {
+                    Text("Scan Length")
+                    Spacer()
+                    Text("\(userConfig.scanLength)")
+                        .fontWeight(.semibold)
+                    Stepper("", value: Bindable(userConfig).scanLength, in: 1...32)
+                        .labelsHidden()
+                }
                 Toggle("Auto-collapse Dictionaries", isOn: Bindable(userConfig).collapseDictionaries)
                 Toggle("Compact Glossaries", isOn: Bindable(userConfig).compactGlossaries)
             } header: {
-                Text("Lookup Settings")
-            } footer: {
-                Text("Yomitan term, frequency and pitch dictionaries (.zip) are supported")
+                Text("Settings")
             }
             
             Section("Term Dictionaries") {

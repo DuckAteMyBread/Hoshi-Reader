@@ -34,7 +34,7 @@ struct DictionarySearchView: View {
                     },
                     onTextSelected: {
                         closePopups()
-                        return handleTextSelection($0, maxResults: userConfig.maxResults, isVertical: false)
+                        return handleTextSelection($0, maxResults: userConfig.maxResults, scanLength: userConfig.scanLength, isVertical: false)
                     },
                     onTapOutside: closePopups
                 )
@@ -56,7 +56,7 @@ struct DictionarySearchView: View {
                             if let index = popups.firstIndex(where: { $0.id == popupId }) {
                                 closeChildPopups(parent: index)
                             }
-                            return handleTextSelection($0, maxResults: userConfig.maxResults, isVertical: false)
+                            return handleTextSelection($0, maxResults: userConfig.maxResults, scanLength: userConfig.scanLength, isVertical: false)
                         },
                         onTapOutside: {
                             if let index = popups.firstIndex(where: { $0.id == popupId }) {
@@ -126,7 +126,7 @@ struct DictionarySearchView: View {
             return
         }
         
-        let results = LookupEngine.shared.lookup(trimmed, maxResults: userConfig.maxResults)
+        let results = LookupEngine.shared.lookup(trimmed, maxResults: userConfig.maxResults, scanLength: userConfig.scanLength)
         if results.isEmpty {
             content = ""
             return
@@ -136,8 +136,8 @@ struct DictionarySearchView: View {
         content = constructHtml(results: results, styles: styles)
     }
     
-    private func handleTextSelection(_ selection: SelectionData, maxResults: Int, isVertical: Bool) -> Int? {
-        let lookupResults = LookupEngine.shared.lookup(selection.text, maxResults: maxResults)
+    private func handleTextSelection(_ selection: SelectionData, maxResults: Int, scanLength: Int,  isVertical: Bool) -> Int? {
+        let lookupResults = LookupEngine.shared.lookup(selection.text, maxResults: maxResults, scanLength: scanLength)
         var dictionaryStyles: [String: String] = [:]
         for style in LookupEngine.shared.getStyles() {
             dictionaryStyles[String(style.dict_name)] = String(style.styles)

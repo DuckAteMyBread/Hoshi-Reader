@@ -1156,48 +1156,52 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    window.lookupEntries.forEach((entry, idx) => {
-        if (idx > 0) {
-            container.appendChild(document.createElement('hr'));
-        }
-        
-        const entryDiv = el('div', { className: 'entry' });
-        entryDiv.appendChild(createEntryHeader(entry, idx));
-        
-        const tags = createTags(entry);
-        if (tags) {
-            entryDiv.appendChild(tags);
-        }
-        
-        const grouped = {};
-        entry.glossaries.forEach(g => {
-            (grouped[g.dictionary] ??= []).push({
-                content: g.content,
-                definitionTags: g.definitionTags,
-                termTags: g.termTags
+    (async () => {
+        for (let idx = 0; idx < window.lookupEntries.length; idx++) {
+            const entry = window.lookupEntries[idx];
+            
+            if (idx > 0) {
+                container.appendChild(document.createElement('hr'));
+            }
+            
+            const entryDiv = el('div', { className: 'entry' });
+            entryDiv.appendChild(createEntryHeader(entry, idx));
+            
+            const tags = createTags(entry);
+            if (tags) {
+                entryDiv.appendChild(tags);
+            }
+            
+            const grouped = {};
+            entry.glossaries.forEach(g => {
+                (grouped[g.dictionary] ??= []).push({
+                    content: g.content,
+                    definitionTags: g.definitionTags,
+                    termTags: g.termTags
+                });
             });
-        });
+            
+            container.appendChild(entryDiv);
+            
+            const dictNames = Object.keys(grouped);
+            for (let dictIdx = 0; dictIdx < dictNames.length; dictIdx++) {
+                entryDiv.appendChild(createGlossarySection(dictNames[dictIdx], grouped[dictNames[dictIdx]], dictIdx === 0));
+                await new Promise(r => requestAnimationFrame(r));
+            }
+        }
         
-        Object.keys(grouped).forEach((dictName, dictIdx) => {
-            entryDiv.appendChild(createGlossarySection(dictName, grouped[dictName], dictIdx === 0));
-        });
-        
-        container.appendChild(entryDiv);
-    });
-
-    if (window.customCSS) {
-        const customStyle = document.createElement('style');
-        customStyle.textContent = window.customCSS;
-        document.body.appendChild(customStyle);
-    }
-
-    if (window.audioEnableAutoplay && window.audioSources?.length && window.lookupEntries.length > 0) {
-        setTimeout(() => {
+        if (window.audioEnableAutoplay && window.audioSources?.length && window.lookupEntries.length > 0) {
             const audioButton = document.querySelector('.audio-button');
             if (audioButton) {
                 audioButton.click();
             }
-        }, 30);
+        }
+    })();
+    
+    if (window.customCSS) {
+        const customStyle = document.createElement('style');
+        customStyle.textContent = window.customCSS;
+        document.body.appendChild(customStyle);
     }
     
     container.addEventListener('click', (e) => {

@@ -34,8 +34,8 @@ class LookupEngine {
         lookupEngine = Lookup(&dictQuery!, &deinflector!)
     }
     
-    func lookup(_ str: String, maxResults: Int = 16) -> [LookupResult] {
-        return Array(lookupEngine?.lookup(std.string(str), Int32(maxResults)) ?? [])
+    func lookup(_ str: String, maxResults: Int = 16, scanLength: Int = 16) -> [LookupResult] {
+        return Array(lookupEngine?.lookup(std.string(str), Int32(maxResults), scanLength) ?? [])
     }
     
     func getStyles() -> [DictionaryStyle] {
