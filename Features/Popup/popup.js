@@ -364,9 +364,9 @@ function constructSingleGlossaryHtml(entryIndex) {
         
         const tempDiv = document.createElement('div');
         try {
-            renderStructuredContent(tempDiv, JSON.parse(g.content), null, dictName);
+            renderStructuredContent(tempDiv, JSON.parse(g.content), null, dictName, true);
         } catch {
-            renderStructuredContent(tempDiv, g.content, null, dictName);
+            renderStructuredContent(tempDiv, g.content, null, dictName, true);
         }
         
         const parsedTags = parseTags(g.definitionTags).filter(tag => !NUMERIC_TAG.test(tag));
@@ -406,9 +406,9 @@ function constructGlossaryHtml(entryIndex) {
         
         const tempDiv = document.createElement('div');
         try {
-            renderStructuredContent(tempDiv, JSON.parse(g.content), null, dictName);
+            renderStructuredContent(tempDiv, JSON.parse(g.content), null, dictName, true);
         } catch {
-            renderStructuredContent(tempDiv, g.content, null, dictName);
+            renderStructuredContent(tempDiv, g.content, null, dictName, true);
         }
         
         index++;
@@ -508,7 +508,7 @@ function constructPitchCategories(pitches, reading, rules) {
 }
 
 // https://github.com/yomidevs/yomitan/blob/d810b2f0842536d24ab82b6cd75d00841710e57b/ext/js/display/structured-content-generator.js#L64
-function createDefinitionImage(data, dictionary) {
+function createDefinitionImage(data, dictionary, exporting = false) {
     const {
         path,
         width = 100,
@@ -542,10 +542,12 @@ function createDefinitionImage(data, dictionary) {
                        (hasPreferredHeight ? preferredHeight / invAspectRatio : width)
                        );
     
-    const node = document.createElement('a');
+    const node = document.createElement(exporting ? 'span' : 'a');
     node.classList.add('gloss-image-link');
-    node.target = '_blank';
-    node.rel = 'noreferrer noopener';
+    if (!exporting) {
+        node.target = '_blank';
+        node.rel = 'noreferrer noopener';
+    }
     
     const imageContainer = document.createElement('span');
     imageContainer.classList.add('gloss-image-container');
@@ -590,7 +592,9 @@ function createDefinitionImage(data, dictionary) {
     const image = document.createElement('img');
     image.classList.add('gloss-image');
     image.alt = nodeData?.alt || title || '';
-    image.src = `image://?dictionary=${encodeURIComponent(dictionary)}&path=${encodeURIComponent(path)}`;
+    if (!exporting) {
+        image.src = `image://?dictionary=${encodeURIComponent(dictionary)}&path=${encodeURIComponent(path)}`;
+    }
     
     imageContainer.appendChild(image);
     return node;
@@ -678,7 +682,7 @@ async function mineEntry(expression, reading, frequencies, pitches, rules, match
     });
 }
 
-function renderStructuredContent(parent, node, language = null, dictName = null) {
+function renderStructuredContent(parent, node, language = null, dictName = null, exporting = false) {
     if (typeof node === 'string') {
         node.split(/\r?\n/).forEach((line, i) => {
             if (i > 0) {
@@ -721,14 +725,14 @@ function renderStructuredContent(parent, node, language = null, dictName = null)
             ul.classList.add('glossary-list');
             node.forEach(child => {
                 const li = document.createElement('li');
-                renderStructuredContent(li, child, language, dictName);
+                renderStructuredContent(li, child, language, dictName, exporting);
                 ul.appendChild(li);
             });
             parent.appendChild(ul);
             return;
         }
         
-        node.forEach(child => renderStructuredContent(parent, child, language, dictName));
+        node.forEach(child => renderStructuredContent(parent, child, language, dictName, exporting));
         return;
     }
     
@@ -737,12 +741,12 @@ function renderStructuredContent(parent, node, language = null, dictName = null)
     }
     
     if (node.type === 'structured-content') {
-        renderStructuredContent(parent, node.content, language, dictName);
+        renderStructuredContent(parent, node.content, language, dictName, exporting);
         return;
     }
     
     if (node.tag === 'img') {
-        parent.appendChild(createDefinitionImage(node, dictName));
+        parent.appendChild(createDefinitionImage(node, dictName, exporting));
         return;
     }
     
@@ -786,7 +790,7 @@ function renderStructuredContent(parent, node, language = null, dictName = null)
     }
     
     if (node.content) {
-        renderStructuredContent(element, node.content, nextLanguage, dictName);
+        renderStructuredContent(element, node.content, nextLanguage, dictName, exporting);
     }
     
     if (node.colSpan) {
