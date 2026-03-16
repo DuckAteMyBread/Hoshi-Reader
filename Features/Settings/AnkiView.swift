@@ -7,11 +7,14 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct AnkiView: View {
     @State private var ankiManager = AnkiManager.shared
     @State private var dictionaryManager = DictionaryManager.shared
-    
+    @State private var isImporting = false
+    @State private var isLoading = false
+
     private var availableHandlebars: [String] {
         var options = Handlebars.allCases.map(\.rawValue)
         for dict in dictionaryManager.termDictionaries {
@@ -27,7 +30,7 @@ struct AnkiView: View {
             }
             
             if ankiManager.isConnected {
-                Section("Settings") {
+                Section {
                     Picker("Deck", selection: $ankiManager.selectedDeck) {
                         ForEach(ankiManager.availableDecks, id: \.self) { deck in
                             Text(deck).tag(deck as String?)
@@ -44,6 +47,14 @@ struct AnkiView: View {
                     
                     Toggle("Allow Duplicates", isOn: $ankiManager.allowDupes)
                         .onChange(of: ankiManager.allowDupes) { _, _ in ankiManager.save() }
+                    
+                    Button("Import .colpkg (Stored Words: \(ankiManager.savedWords.count.formatted(.number.grouping(.never))))") {
+                        isImporting = true
+                    }
+                } header: {
+                    Text("Settings");
+                } footer: {
+                    Text("Importing a .colpkg backup from Anki will allow duplicate checks before sending to Anki. It's recommended to do this periodically to reduce drift.")
                 }
             }
             
@@ -105,6 +116,29 @@ struct AnkiView: View {
                             }
                     }
                 }
+            }
+        }
+        .fileImporter(
+            isPresented: $isImporting,
+            allowedContentTypes: [UTType(filenameExtension: "colpkg")!]
+        ) { result in
+            if case .success(let url) = result {
+                isLoading = true
+                Task.detached {
+                    do {
+                        try await AnkiManager.shared.importColpkg(from: url)
+                    } catch {
+                        await MainActor.run {
+                            ankiManager.errorMessage = error.localizedDescription
+                        }
+                    }
+                    await MainActor.run { isLoading = false }
+                }
+            }
+        }
+        .overlay {
+            if isLoading {
+                LoadingOverlay("Importing…")
             }
         }
         .navigationTitle("Anki")

@@ -249,6 +249,7 @@ struct PopupView: View {
             window.audioEnableAutoplay = \(userConfig.audioEnableAutoplay);
             window.audioPlaybackMode = "\(userConfig.audioPlaybackMode.rawValue)";
             window.needsAudio = \(AnkiManager.shared.needsAudio);
+            window.allowDupes = \(AnkiManager.shared.allowDupes);
             window.customCSS = \(customCSS);
         </script>
         <div id="entries-container"></div>

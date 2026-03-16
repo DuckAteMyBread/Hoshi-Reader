@@ -1020,7 +1020,7 @@ function createAudioButton(expression, reading, entryIndex) {
     return button;
 }
 
-function createEntryHeader(entry, idx) {
+async function createEntryHeader(entry, idx) {
     const { expression, reading, matched, frequencies, pitches, rules } = entry;
     const header = el('div', { className: 'entry-header' });
     
@@ -1038,14 +1038,25 @@ function createEntryHeader(entry, idx) {
         buttonsContainer.appendChild(createAudioButton(expression, reading, idx));
     }
     
-    buttonsContainer.appendChild(el('button', {
-        className: 'mine-button',
-        textContent: '+',
+    const isDuplicate = await webkit.messageHandlers.duplicateCheck.postMessage(expression);
+    const mineButton = el('button', {
+        className: 'mine-button' + (isDuplicate ? ' duplicate' : '') + (isDuplicate && !window.allowDupes ? ' disabled' : ''),
+        textContent: isDuplicate ? '✓' : '+',
+        disabled: isDuplicate && !window.allowDupes,
         ontouchstart: () => {
             lastSelection = window.getSelection()?.toString() || '';
         },
-        onclick: () => mineEntry(expression, reading, frequencies, pitches, rules, matched, idx, lastSelection)
-    }));
+        onclick: async () => {
+            await mineEntry(expression, reading, frequencies, pitches, rules, matched, idx, lastSelection);
+            mineButton.textContent = '✓';
+            mineButton.classList.add('duplicate');
+            if (!window.allowDupes) {
+                mineButton.classList.add('disabled');
+                mineButton.disabled = true;
+            }
+        }
+    });
+    buttonsContainer.appendChild(mineButton);
     
     header.appendChild(buttonsContainer);
     
@@ -1169,7 +1180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const entryDiv = el('div', { className: 'entry' });
-            entryDiv.appendChild(createEntryHeader(entry, idx));
+            entryDiv.appendChild(await createEntryHeader(entry, idx));
             
             const tags = createTags(entry);
             if (tags) {

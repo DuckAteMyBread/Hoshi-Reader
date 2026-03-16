@@ -7,7 +7,10 @@
 //
 
 import Foundation
+import SQLite3
+import libzstd
 import UIKit
+import ZipArchive
 
 @Observable
 @MainActor
@@ -26,6 +29,8 @@ class AnkiManager {
     
     var errorMessage: String?
     
+    var savedWords: Set<String> = []
+    
     var isConnected: Bool { !availableDecks.isEmpty }
     
     var needsAudio: Bool {
@@ -41,10 +46,14 @@ class AnkiManager {
     private static let addNoteCallback = "anki://x-callback-url/addnote"
     
     private static let ankiConfig = "anki_config.json"
+    private static let ankiWords = "anki_words.json"
     
     private static let handlebarRegex = /\{.*?\}/
     
-    private init() { load() }
+    private init() {
+        load()
+        loadWords()
+    }
     
     func requestInfo() {
         var urlComponents = URLComponents(string: Self.infoCallback)
@@ -145,6 +154,11 @@ class AnkiManager {
         if let url = urlComponents?.url {
             UIApplication.shared.open(url)
         }
+        
+        if let expression = content["expression"], !expression.isEmpty {
+            savedWords.insert(expression)
+            try? Self.saveWords(savedWords)
+        }
     }
     
     func updateHandlebar(old: String, new: String) {
@@ -152,7 +166,7 @@ class AnkiManager {
         fieldMappings = fieldMappings.mapValues {
             $0.replacingOccurrences(of: "\(Handlebars.singleGlossaryPrefix)\(old)}", with: "\(Handlebars.singleGlossaryPrefix)\(new)}")
         }
-
+        
         save()
     }
     
@@ -237,5 +251,105 @@ class AnkiManager {
         tags = config.tags ?? ""
         availableDecks = config.availableDecks
         availableNoteTypes = config.availableNoteTypes
+    }
+    
+    func importColpkg(from url: URL) throws {
+        guard url.startAccessingSecurityScopedResource() else {
+            throw ColpkgError.accessDenied
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+        
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        
+        SSZipArchive.unzipFile(
+            atPath: url.path(percentEncoded: false),
+            toDestination: tempDir.path(percentEncoded: false)
+        )
+        
+        let collection = try Data(contentsOf: tempDir.appendingPathComponent("collection.anki21b"))
+        let sqliteData = try Self.decompressZstd(collection)
+        
+        let dbFile = tempDir.appendingPathComponent("collection.db")
+        try sqliteData.write(to: dbFile)
+        
+        savedWords = try Self.extractExpressionField(from: dbFile)
+        try Self.saveWords(savedWords)
+    }
+    
+    private func loadWords() {
+        guard let url = try? BookStorage.getDocumentsDirectory().appendingPathComponent(AnkiManager.ankiWords),
+              let data = try? Data(contentsOf: url),
+              let words = try? JSONDecoder().decode(Set<String>.self, from: data) else {
+            return
+        }
+        savedWords = words
+    }
+    
+    private static func saveWords(_ words: Set<String>) throws {
+        let file = try BookStorage.getDocumentsDirectory().appendingPathComponent(ankiWords)
+        try JSONEncoder().encode(words).write(to: file)
+    }
+    
+    private static func decompressZstd(_ data: Data) throws -> Data {
+        let dctx = ZSTD_createDCtx()!
+        defer { ZSTD_freeDCtx(dctx) }
+        
+        var result = Data()
+        let blockSize = ZSTD_DStreamOutSize()
+        
+        try data.withUnsafeBytes { src in
+            var input = ZSTD_inBuffer(src: src.baseAddress, size: src.count, pos: 0)
+            let dst = UnsafeMutablePointer<UInt8>.allocate(capacity: blockSize)
+            defer { dst.deallocate() }
+            
+            while input.pos < input.size {
+                var outBuf = ZSTD_outBuffer(dst: dst, size: blockSize, pos: 0)
+                let ret = ZSTD_decompressStream(dctx, &outBuf, &input)
+                guard ZSTD_isError(ret) == 0 else {
+                    throw ColpkgError.zstd
+                }
+                result.append(dst, count: outBuf.pos)
+            }
+        }
+        return result
+    }
+    
+    private static func extractExpressionField(from url: URL) throws -> Set<String> {
+        var db: OpaquePointer?
+        sqlite3_open_v2(url.path(percentEncoded: false), &db, SQLITE_OPEN_READWRITE, nil)
+        sqlite3_exec(db, "PRAGMA journal_mode=OFF", nil, nil, nil)
+        defer { sqlite3_close(db) }
+        
+        var stmt: OpaquePointer?
+        sqlite3_prepare_v2(db, "SELECT flds FROM notes", -1, &stmt, nil)
+        defer { sqlite3_finalize(stmt) }
+        
+        var words = Set<String>()
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            guard let row = sqlite3_column_text(stmt, 0) else {
+                continue
+            }
+            let word = String(cString: row).prefix(while: { $0 != "\u{1f}" })
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !word.isEmpty {
+                words.insert(word)
+            }
+        }
+        return words
+    }
+    
+    enum ColpkgError: LocalizedError {
+        case zstd
+        case accessDenied
+        
+        var errorDescription: String? {
+            switch self {
+            case .zstd: "Failed to decompress database"
+            case .accessDenied: "Failed to access .colpkg"
+            }
+        }
     }
 }

@@ -58,8 +58,20 @@ body {
     background: transparent;
     color: inherit;
     font-size: 18px;
-    opacity: 0.3;
+    opacity: 0.5;
     -webkit-user-select: none;
+}
+
+.mine-button {
+    margin-left: 6px;
+}
+
+.mine-button.duplicate {
+    transform: translateY(0.5px);
+}
+
+.mine-button.duplicate.disabled {
+    opacity: 0.15;
 }
 
 .audio-button {

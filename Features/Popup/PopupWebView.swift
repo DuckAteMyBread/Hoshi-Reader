@@ -143,6 +143,7 @@ struct PopupWebView: UIViewRepresentable {
         config.userContentController.add(context.coordinator, name: "textSelected")
         config.userContentController.add(context.coordinator, name: "tapOutside")
         config.userContentController.add(context.coordinator, name: "playWordAudio")
+        config.userContentController.addScriptMessageHandler(context.coordinator, contentWorld: .page, name: "duplicateCheck")
         config.setURLSchemeHandler(AudioHandler(), forURLScheme: "audio")
         config.setURLSchemeHandler(ImageHandler(), forURLScheme: "image")
         config.mediaTypesRequiringUserActionForPlayback = []
@@ -179,9 +180,10 @@ struct PopupWebView: UIViewRepresentable {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "textSelected")
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "tapOutside")
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "playWordAudio")
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "duplicateCheck", contentWorld: .page)
     }
     
-    class Coordinator: NSObject, WKScriptMessageHandler {
+    class Coordinator: NSObject, WKScriptMessageHandler, WKScriptMessageHandlerWithReply {
         var parent: PopupWebView
         var currentContent: String = ""
         var wasLoaded: Bool = false
@@ -190,6 +192,13 @@ struct PopupWebView: UIViewRepresentable {
         
         init(parent: PopupWebView) {
             self.parent = parent
+        }
+        
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) async -> (Any?, String?) {
+            if message.name == "duplicateCheck", let word = message.body as? String {
+                return (AnkiManager.shared.savedWords.contains(word), nil)
+            }
+            return (nil, nil)
         }
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
