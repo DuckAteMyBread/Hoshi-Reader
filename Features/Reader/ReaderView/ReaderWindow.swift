@@ -37,15 +37,17 @@ final class ReaderWindow {
         window.makeKeyAndVisible()
         self.window = window
         
-        UIView.animate(withDuration: 0.2) { window.alpha = 1 }
+        UIView.animate(withDuration: 0.2, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut]) {
+            window.alpha = 1
+        }
     }
     
     func dismiss(onDismiss: (() -> Void)? = nil) {
         guard let window else { return }
         self.window = nil
-        UIView.animate(withDuration: 0.2, animations: {
+        UIView.animate(withDuration: 0.18, delay: 0, options: [.beginFromCurrentState, .curveEaseIn]) {
             window.alpha = 0
-        }) { _ in
+        } completion: { _ in
             window.isHidden = true
             onDismiss?()
         }
