@@ -168,7 +168,18 @@ class BookshelfViewModel {
             showError(message: error.localizedDescription)
         }
     }
-
+    
+    func importBooks(result: Result<[URL], Error>) {
+        do {
+            let urls = try result.get()
+            for url in urls {
+                importBook(result: .success(url))
+            }
+        } catch {
+            showError(message: error.localizedDescription)
+        }
+    }
+    
     func importRemoteBook(from url: URL) {
         isDownloading = true
         Task {

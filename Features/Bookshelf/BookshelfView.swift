@@ -60,7 +60,8 @@ struct BookshelfView: View {
                     .fileImporter(
                         isPresented: $viewModel.isImporting,
                         allowedContentTypes: [.epub],
-                        onCompletion: viewModel.importBook
+                        allowsMultipleSelection: true,
+                        onCompletion: viewModel.importBooks
                     )
                     .sheet(isPresented: $showShelfManagement) {
                         ShelfManagementView(viewModel: viewModel)
