@@ -198,7 +198,8 @@ function segmentFurigana(expression, reading) {
 }
 
 function buildFuriganaEl(parent, expression, reading) {
-    for (const [text, furigana] of segmentFurigana(expression, reading)) {
+    const segments = segmentFurigana(expression, reading);
+    for (const [text, furigana] of segments) {
         if (furigana) {
             const ruby = el('ruby', {}, [text]);
             ruby.appendChild(el('rt', { textContent: furigana }));
@@ -207,6 +208,7 @@ function buildFuriganaEl(parent, expression, reading) {
             parent.appendChild(document.createTextNode(text));
         }
     }
+    return segments.length === 1 && segments[0][1];
 }
 
 function constructFuriganaPlain(expression, reading) {
@@ -1132,12 +1134,19 @@ async function createEntryHeader(entry, idx) {
     const header = el('div', { className: 'entry-header' });
     
     const expressionSpan = el('span', { className: 'expression' });
+    let needsScroll = false;
     if (reading && reading !== expression) {
-        buildFuriganaEl(expressionSpan, expression, reading);
+        needsScroll = buildFuriganaEl(expressionSpan, expression, reading);
     } else {
         expressionSpan.textContent = expression;
     }
-    header.appendChild(expressionSpan);
+    if (needsScroll) {
+        const expressionScroll = el('div', { className: 'expression-scroll' });
+        expressionScroll.appendChild(expressionSpan);
+        header.appendChild(expressionScroll);
+    } else {
+        header.appendChild(expressionSpan);
+    }
     
     const buttonsContainer = el('div', { className: 'header-buttons' });
     

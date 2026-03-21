@@ -50,8 +50,23 @@ body {
     padding-top: 4px;
 }
 
+.expression-scroll {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.expression-scroll::-webkit-scrollbar {
+    display: none;
+}
+
 .expression {
     font-size: 26px;
+}
+
+.expression-scroll .expression {
+    display: inline-block;
+    white-space: nowrap;
 }
 
 .expression rt {
@@ -62,6 +77,7 @@ body {
 .header-buttons {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
     margin-left: auto;
     gap: 6px;
 }
