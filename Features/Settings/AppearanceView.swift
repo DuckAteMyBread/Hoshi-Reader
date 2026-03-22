@@ -118,18 +118,18 @@ struct AppearanceView: View {
                     HStack {
                         Text("Horizontal Padding")
                         Spacer()
-                        Text("\(userConfig.horizontalPadding)")
+                        Text("\(userConfig.horizontalPadding)%")
                             .fontWeight(.semibold)
-                        Stepper("", value: $userConfig.horizontalPadding, in: 0...80, step: 2)
+                        Stepper("", value: $userConfig.horizontalPadding, in: 0...50, step: 1)
                             .labelsHidden()
                     }
                     
                     HStack {
                         Text("Vertical Padding")
                         Spacer()
-                        Text("\(userConfig.verticalPadding)")
+                        Text("\(userConfig.verticalPadding)%")
                             .fontWeight(.semibold)
-                        Stepper("", value: $userConfig.verticalPadding, in: 0...80, step: 2)
+                        Stepper("", value: $userConfig.verticalPadding, in: 0...50, step: 1)
                             .labelsHidden()
                     }
                     

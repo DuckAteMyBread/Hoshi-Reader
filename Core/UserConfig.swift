@@ -108,11 +108,11 @@ class UserConfig {
     }
     
     var horizontalPadding: Int {
-        didSet { UserDefaults.standard.set(horizontalPadding, forKey: "horizontalPadding") }
+        didSet { UserDefaults.standard.set(horizontalPadding, forKey: "layoutHorizontalPadding") }
     }
     
     var verticalPadding: Int {
-        didSet { UserDefaults.standard.set(verticalPadding, forKey: "verticalPadding") }
+        didSet { UserDefaults.standard.set(verticalPadding, forKey: "layoutVerticalPadding") }
     }
     
     var avoidPageBreak: Bool {
@@ -268,8 +268,8 @@ class UserConfig {
         self.fontSize = defaults.object(forKey: "fontSize") as? Int ?? 22
         self.readerHideFurigana = defaults.object(forKey: "readerHideFurigana") as? Bool ?? false
         
-        self.horizontalPadding = defaults.object(forKey: "horizontalPadding") as? Int ?? 10
-        self.verticalPadding = defaults.object(forKey: "verticalPadding") as? Int ?? 0
+        self.horizontalPadding = defaults.object(forKey: "layoutHorizontalPadding") as? Int ?? 5
+        self.verticalPadding = defaults.object(forKey: "layoutVerticalPadding") as? Int ?? 0
         self.avoidPageBreak = defaults.object(forKey: "avoidPageBreak") as? Bool ?? false
         self.layoutAdvanced = defaults.object(forKey: "layoutAdvanced") as? Bool ?? false
         self.lineHeight = defaults.object(forKey: "lineHeight") as? Double ?? 1.65

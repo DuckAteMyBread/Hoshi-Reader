@@ -235,7 +235,10 @@ struct ReaderWebView: UIViewRepresentable {
             let pageHeight = Int(parent.viewSize.height)
             let pageWidth = Int(parent.viewSize.width)
             let writingMode = parent.userConfig.verticalWriting ? "vertical-rl" : "horizontal-tb"
-            let columnGap = parent.userConfig.verticalWriting ? parent.userConfig.verticalPadding * 2 : parent.userConfig.horizontalPadding * 2
+            let columnGapUnit = parent.userConfig.verticalWriting ? "vh" : "vw"
+            let columnGapValue = parent.userConfig.verticalWriting
+                ? parent.userConfig.verticalPadding
+                : parent.userConfig.horizontalPadding
             
             let textColorCss = """
             @media (prefers-color-scheme: light) { :root { --hoshi-text-color: #000; } }
@@ -298,12 +301,12 @@ struct ReaderWebView: UIViewRepresentable {
                 box-sizing: border-box !important;
                 column-width: var(--page-height, 100vh) !important;
                 column-height: var(--page-width, 100vw) !important;
-                column-gap: \(columnGap)px;
-                padding: \(parent.userConfig.verticalPadding)px \(parent.userConfig.horizontalPadding)px !important;
+                column-gap: \(columnGapValue)\(columnGapUnit);
+                padding: \(Double(parent.userConfig.verticalPadding) / 2)vh \(Double(parent.userConfig.horizontalPadding) / 2)vw !important;
             }
             img.block-img {
-                max-width: calc(100vw - \(parent.userConfig.horizontalPadding * 2)px) !important;
-                max-height: calc(100vh - \(parent.userConfig.verticalPadding * 2)px) !important;
+                max-width: \(100 - parent.userConfig.horizontalPadding)vw !important;
+                max-height: \(100 - parent.userConfig.verticalPadding)vh !important;
                 width: auto !important;
                 height: auto !important;
                 display: block !important;
@@ -313,8 +316,8 @@ struct ReaderWebView: UIViewRepresentable {
                 object-fit: contain !important;
             }
             svg {
-                max-width: calc(100vw - \(parent.userConfig.horizontalPadding * 2)px) !important;
-                max-height: calc(100vh - \(parent.userConfig.verticalPadding * 2)px) !important;
+                max-width: \(100 - parent.userConfig.horizontalPadding)vw !important;
+                max-height: \(100 - parent.userConfig.verticalPadding)vh !important;
                 width: 100% !important;
                 height: 100% !important;
                 display: block !important;
@@ -338,7 +341,7 @@ struct ReaderWebView: UIViewRepresentable {
                     guard parent.userConfig.verticalPadding > 0 else { return "" }
                     return """
                     var spacer = document.createElement('div');
-                    spacer.style.height = '\(parent.userConfig.verticalPadding)px';
+                    spacer.style.height = '\(Double(parent.userConfig.verticalPadding) / 2)vh';
                     spacer.style.width = '100%';
                     spacer.style.display = 'block';
                     spacer.style.breakInside = 'avoid';
@@ -349,7 +352,7 @@ struct ReaderWebView: UIViewRepresentable {
                     return """
                     var spacer = document.createElement('div');
                     spacer.style.height = '100%';
-                    spacer.style.width = '\(parent.userConfig.horizontalPadding)px';
+                    spacer.style.width = '\(Double(parent.userConfig.horizontalPadding) / 2)vw';
                     spacer.style.display = 'block';
                     spacer.style.breakInside = 'avoid';
                     document.body.appendChild(spacer);
