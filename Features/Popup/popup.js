@@ -1164,12 +1164,17 @@ async function createEntryHeader(entry, idx) {
         },
         onclick: async () => {
             await mineEntry(expression, reading, frequencies, pitches, rules, matched, idx, lastSelection);
-            mineButton.textContent = '✓';
-            mineButton.classList.add('duplicate');
-            if (!window.allowDupes) {
-                mineButton.classList.add('disabled');
-                mineButton.disabled = true;
-            }
+            setTimeout(async () => {
+                const wasAdded = await webkit.messageHandlers.duplicateCheck.postMessage(expression);
+                if (wasAdded) {
+                    mineButton.textContent = '✓';
+                    mineButton.classList.add('duplicate');
+                    if (!window.allowDupes) {
+                        mineButton.classList.add('disabled');
+                        mineButton.disabled = true;
+                    }
+                }
+            }, 1500);
         }
     });
     buttonsContainer.appendChild(mineButton);
@@ -1298,10 +1303,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const entryDiv = el('div', { className: 'entry' });
             entryDiv.appendChild(await createEntryHeader(entry, idx));
             
+            if (window.audioEnableAutoplay && window.audioSources?.length && idx == 0) {
+                setTimeout(() => {
+                    const audioButton = entryDiv.querySelector('.audio-button');
+                    if (audioButton) {
+                        audioButton.click();
+                    }
+                }, 70);
+            }
+            
             const tags = createTags(entry);
             if (tags) {
                 entryDiv.appendChild(tags);
             }
+            
+            container.appendChild(entryDiv);
+            await new Promise(r => requestAnimationFrame(r));
             
             const grouped = {};
             entry.glossaries.forEach(g => {
@@ -1312,19 +1329,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
             
-            container.appendChild(entryDiv);
-            
             const dictNames = Object.keys(grouped);
             for (let dictIdx = 0; dictIdx < dictNames.length; dictIdx++) {
                 entryDiv.appendChild(createGlossarySection(dictNames[dictIdx], grouped[dictNames[dictIdx]], dictIdx === 0));
                 await new Promise(r => requestAnimationFrame(r));
-            }
-        }
-        
-        if (window.audioEnableAutoplay && window.audioSources?.length && window.lookupEntries.length > 0) {
-            const audioButton = document.querySelector('.audio-button');
-            if (audioButton) {
-                audioButton.click();
             }
         }
     })();

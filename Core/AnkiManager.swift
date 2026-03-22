@@ -148,17 +148,14 @@ class AnkiManager {
             queryItems.append(URLQueryItem(name: "dupes", value: "1"))
         }
         
-        queryItems.append(URLQueryItem(name: "x-success", value: Self.successCallback))
+        let expression = content["expression"] ?? ""
+        let successURL = Self.successCallback + "?expression=" + (expression.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? expression)
+        queryItems.append(URLQueryItem(name: "x-success", value: successURL))
         
         urlComponents?.queryItems = queryItems
         
         if let url = urlComponents?.url {
             UIApplication.shared.open(url)
-        }
-        
-        if let expression = content["expression"], !expression.isEmpty {
-            savedWords.insert(expression)
-            try? Self.saveWords(savedWords)
         }
     }
     
@@ -291,6 +288,11 @@ class AnkiManager {
         savedWords = words
     }
     
+    func addWord(_ word: String) {
+        savedWords.insert(word)
+        try? Self.saveWords(savedWords)
+    }
+
     private static func saveWords(_ words: Set<String>) throws {
         let file = try BookStorage.getDocumentsDirectory().appendingPathComponent(ankiWords)
         try JSONEncoder().encode(words).write(to: file)

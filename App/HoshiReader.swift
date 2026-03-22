@@ -68,6 +68,10 @@ struct HoshiReaderApp: App {
                 AnkiManager.shared.fetch()
             } else if url.host == "ankiSuccess" {
                 LocalFileServer.shared.clearCover()
+                if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                   let expression = components.queryItems?.first(where: { $0.name == "expression" })?.value {
+                    AnkiManager.shared.addWord(expression)
+                }
             } else if url.host == "search" {
                 let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
                 pendingLookup = components?.queryItems?.first(where: { $0.name == "text" })?.value ?? ""
