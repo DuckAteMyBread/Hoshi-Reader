@@ -11,6 +11,7 @@ import CHoshiDicts
 
 struct DictionarySearchView: View {
     @Environment(UserConfig.self) private var userConfig
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var query: String = ""
     @State private var lastQuery: String = ""
     @State private var content: String = ""
@@ -23,6 +24,18 @@ struct DictionarySearchView: View {
     @State private var clearHighlight: Bool = false
     var initialQuery: String = ""
     var initialAutofocus: Bool = true
+    
+    private var usesTopTabBarLayout: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
+    }
+    
+    private var searchBarInset: CGFloat {
+        usesTopTabBarLayout ? 100 : 50
+    }
+    
+    private var tabBarInset: CGFloat {
+        usesTopTabBarLayout ? 0 : 45
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -55,8 +68,8 @@ struct DictionarySearchView: View {
                         screenSize: geometry.size,
                         isVertical: popup.isVertical,
                         isFullWidth: popup.isFullWidth,
-                        topInset: UIApplication.topSafeArea + 50,
-                        bottomInset: max(UIApplication.bottomSafeArea, 30) + 45,
+                        topInset: UIApplication.topSafeArea + searchBarInset,
+                        bottomInset: max(UIApplication.bottomSafeArea, 30) + tabBarInset,
                         coverURL: nil,
                         documentTitle: nil,
                         clearHighlight: popup.clearHighlight,
