@@ -55,6 +55,14 @@ struct AnkiConnectView: View {
                         Text("Deck Root").tag(DuplicateScope.deckroot)
                     }
                     
+                    Toggle("Check All Models", isOn: Binding(
+                        get: { ankiManager.ankiConnectConfig?.checkAllModels ?? false },
+                        set: { value in
+                            ankiManager.ankiConnectConfig?.checkAllModels = value
+                            ankiManager.save()
+                        }
+                    ))
+                    
                     Toggle("Force Sync on adding card", isOn: Binding(
                         get: { ankiManager.ankiConnectConfig?.forceSync ?? false },
                         set: { value in

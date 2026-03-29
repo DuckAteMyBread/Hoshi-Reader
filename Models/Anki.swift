@@ -49,6 +49,7 @@ struct AnkiConnectConfig: Codable {
     var url: String?
     var timeout: Int
     var duplicateScope: DuplicateScope
+    var checkAllModels: Bool? = false
     var forceSync: Bool
 }
 

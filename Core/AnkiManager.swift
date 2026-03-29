@@ -252,11 +252,22 @@ class AnkiManager {
         }
         
         var options: [String: Any] = ["allowDuplicate": allowDupes]
-        if ankiConnectConfig?.duplicateScope != .collection {
+        if ankiConnectConfig?.duplicateScope == .collection {
+            options["duplicateScope"] = "collection"
+        } else {
             options["duplicateScope"] = "deck"
             if ankiConnectConfig?.duplicateScope == .deckroot {
-                options["duplicateScopeOptions"] = ["checkChildren": true]
+                let rootDeck = deck.split(separator: "::", maxSplits: 1).first.map(String.init) ?? deck
+                options["duplicateScopeOptions"] = [
+                    "deckName": rootDeck,
+                    "checkChildren": true
+                ]
             }
+        }
+        if ankiConnectConfig?.checkAllModels == true {
+            var duplicateScopeOptions = options["duplicateScopeOptions"] as? [String: Any] ?? [:]
+            duplicateScopeOptions["checkAllModels"] = true
+            options["duplicateScopeOptions"] = duplicateScopeOptions
         }
         var note: [String: Any] = [
             "deckName": deck,
@@ -315,11 +326,22 @@ class AnkiManager {
         }
         
         var options: [String: Any] = [:]
-        if ankiConnectConfig?.duplicateScope != .collection {
+        if ankiConnectConfig?.duplicateScope == .collection {
+            options["duplicateScope"] = "collection"
+        } else {
             options["duplicateScope"] = "deck"
             if ankiConnectConfig?.duplicateScope == .deckroot {
-                options["duplicateScopeOptions"] = ["checkChildren": true]
+                let rootDeck = deck.split(separator: "::", maxSplits: 1).first.map(String.init) ?? deck
+                options["duplicateScopeOptions"] = [
+                    "deckName": rootDeck,
+                    "checkChildren": true
+                ]
             }
+        }
+        if ankiConnectConfig?.checkAllModels == true {
+            var duplicateScopeOptions = options["duplicateScopeOptions"] as? [String: Any] ?? [:]
+            duplicateScopeOptions["checkAllModels"] = true
+            options["duplicateScopeOptions"] = duplicateScopeOptions
         }
         let note: [String: Any] = [
             "deckName": deck,
