@@ -129,6 +129,21 @@ struct AppearanceView: View {
                         .frame(width: 180)
                     }
                     
+                    if userConfig.continuousMode {
+                        VStack {
+                            HStack {
+                                Text("Chapter Swipe Distance")
+                                Spacer()
+                                Text("\(userConfig.chapterSwipeDistance)")
+                                    .fontWeight(.semibold)
+                            }
+                            Slider(value: .init(
+                                get: { Double(userConfig.chapterSwipeDistance) },
+                                set: { userConfig.chapterSwipeDistance = Int($0) }
+                            ), in: 10...60, step: 5)
+                        }
+                    }
+                    
                     HStack {
                         Text("Horizontal Padding")
                         Spacer()

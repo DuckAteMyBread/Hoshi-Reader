@@ -450,7 +450,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
             let contentSize = vertical ? scrollView.contentSize.width : scrollView.contentSize.height
             let viewSize = vertical ? scrollView.bounds.width : scrollView.bounds.height
             let maxOffset = max(contentSize - viewSize, 0)
-            let threshold: CGFloat = 50
+            let threshold = CGFloat(parent.userConfig.chapterSwipeDistance)
             
             let scrolledPastEnd = vertical ? offset < -threshold : offset > maxOffset + threshold
             let scrolledPastStart = vertical ? offset > maxOffset + threshold : offset < -threshold

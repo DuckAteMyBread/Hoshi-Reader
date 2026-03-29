@@ -119,6 +119,10 @@ class UserConfig {
         didSet { UserDefaults.standard.set(continuousMode, forKey: "continuousMode") }
     }
     
+    var chapterSwipeDistance: Int {
+        didSet { UserDefaults.standard.set(chapterSwipeDistance, forKey: "chapterSwipeDistance") }
+    }
+    
     var horizontalPadding: Int {
         didSet { UserDefaults.standard.set(horizontalPadding, forKey: "layoutHorizontalPadding") }
     }
@@ -283,6 +287,7 @@ class UserConfig {
         self.readerHideFurigana = defaults.object(forKey: "readerHideFurigana") as? Bool ?? false
         
         self.continuousMode = defaults.object(forKey: "continuousMode") as? Bool ?? false
+        self.chapterSwipeDistance = defaults.object(forKey: "chapterSwipeDistance") as? Int ?? 20
         self.horizontalPadding = defaults.object(forKey: "layoutHorizontalPadding") as? Int ?? 5
         self.verticalPadding = defaults.object(forKey: "layoutVerticalPadding") as? Int ?? 0
         self.avoidPageBreak = defaults.object(forKey: "avoidPageBreak") as? Bool ?? false
