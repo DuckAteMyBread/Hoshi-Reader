@@ -142,9 +142,7 @@ class BookshelfViewModel {
                 let bookURL = try BookStorage.getBooksDirectory().appendingPathComponent(folder)
                 try BookStorage.delete(at: bookURL)
             }
-            withAnimation {
-                books.removeAll { $0.id == book.id }
-            }
+            books.removeAll { $0.id == book.id }
             for i in shelves.indices {
                 shelves[i].bookIds.removeAll { $0 == book.id }
             }
