@@ -237,9 +237,9 @@ struct ScrollReaderWebView: UIViewRepresentable {
             html, body {
                 margin: 0 !important;
                 padding: 0 !important;
+                writing-mode: \(writingMode) !important;
             }
             body {
-                writing-mode: \(writingMode) !important;
                 font-family: \(parent.userConfig.selectedFont), serif !important;
                 font-size: \(parent.userConfig.fontSize)px !important;
                 \(textSpacingCss)
@@ -247,6 +247,8 @@ struct ScrollReaderWebView: UIViewRepresentable {
                 padding: \(Double(parent.userConfig.verticalPadding) / 2)vh \(Double(parent.userConfig.horizontalPadding) / 2)vw !important;
             }
             img.block-img {
+                max-width: \(100 - parent.userConfig.horizontalPadding)vw !important;
+                max-height: \(100 - parent.userConfig.verticalPadding)vh !important;
                 width: auto !important;
                 height: auto !important;
                 display: block !important;
@@ -254,6 +256,8 @@ struct ScrollReaderWebView: UIViewRepresentable {
                 object-fit: contain !important;
             }
             svg {
+                max-width: \(100 - parent.userConfig.horizontalPadding)vw !important;
+                max-height: \(100 - parent.userConfig.verticalPadding)vh !important;
                 width: 100% !important;
                 height: 100% !important;
                 display: block !important;

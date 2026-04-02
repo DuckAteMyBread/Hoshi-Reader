@@ -292,9 +292,9 @@ struct ReaderWebView: UIViewRepresentable {
                 width: var(--page-width, 100vw) !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                writing-mode: \(writingMode) !important;
             }
             body {
-                writing-mode: \(writingMode) !important;
                 font-family: \(parent.userConfig.selectedFont), serif !important;
                 font-size: \(parent.userConfig.fontSize)px !important;
                 \(textSpacingCss)
