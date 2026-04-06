@@ -197,7 +197,7 @@ struct PopupView: View {
                         dictionaryStyles: dictionaryStyles,
                         lookupEntries: lookupEntries,
                         onMine: { content in
-                            AnkiManager.shared.addNote(content: content, context: MiningContext(sentence: selectionData.sentence, documentTitle: documentTitle, coverURL: coverURL))
+                            await AnkiManager.shared.addNote(content: content, context: MiningContext(sentence: selectionData.sentence, documentTitle: documentTitle, coverURL: coverURL))
                         },
                         onTextSelected: onTextSelected,
                         onTapOutside: onTapOutside,
@@ -218,7 +218,7 @@ struct PopupView: View {
                         dictionaryStyles: dictionaryStyles,
                         lookupEntries: lookupEntries,
                         onMine: { content in
-                            AnkiManager.shared.addNote(content: content, context: MiningContext(sentence: selectionData.sentence, documentTitle: documentTitle, coverURL: coverURL))
+                            await AnkiManager.shared.addNote(content: content, context: MiningContext(sentence: selectionData.sentence, documentTitle: documentTitle, coverURL: coverURL))
                         },
                         onTextSelected: onTextSelected,
                         onTapOutside: onTapOutside,

@@ -29,6 +29,9 @@ struct AppearanceView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                    if userConfig.theme == .system {
+                        Toggle("Use Sepia as Light Theme", isOn: $userConfig.systemLightSepia)
+                    }
                     if userConfig.theme == .custom {
                         Picker("Interface", selection: $userConfig.uiTheme) {
                             Text("System").tag(Themes.system)
@@ -115,6 +118,32 @@ struct AppearanceView: View {
                 }
                 
                 Section("Layout") {
+                    HStack {
+                        Text("Mode")
+                        Spacer()
+                        Picker("", selection: $userConfig.continuousMode) {
+                            Text("Paginated").tag(false)
+                            Text("Continuous").tag(true)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 180)
+                    }
+                    
+                    if userConfig.continuousMode {
+                        VStack {
+                            HStack {
+                                Text("Chapter Swipe Distance")
+                                Spacer()
+                                Text("\(userConfig.chapterSwipeDistance)")
+                                    .fontWeight(.semibold)
+                            }
+                            Slider(value: .init(
+                                get: { Double(userConfig.chapterSwipeDistance) },
+                                set: { userConfig.chapterSwipeDistance = Int($0) }
+                            ), in: 10...60, step: 5)
+                        }
+                    }
+                    
                     HStack {
                         Text("Horizontal Padding")
                         Spacer()

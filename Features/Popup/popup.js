@@ -765,7 +765,7 @@ async function mineEntry(expression, reading, frequencies, pitches, rules, match
     
     const audio = audioUrls[idx] || '';
     
-    webkit.messageHandlers.mineEntry.postMessage({
+    return await webkit.messageHandlers.mineEntry.postMessage({
         expression,
         reading,
         matched,
@@ -1131,7 +1131,7 @@ function createAudioButton(expression, reading, entryIndex) {
     return button;
 }
 
-async function createEntryHeader(entry, idx) {
+function createEntryHeader(entry, idx) {
     const { expression, reading, matched, frequencies, pitches, rules } = entry;
     const header = el('div', { className: 'entry-header' });
     
@@ -1156,30 +1156,40 @@ async function createEntryHeader(entry, idx) {
         buttonsContainer.appendChild(createAudioButton(expression, reading, idx));
     }
     
-    const isDuplicate = await webkit.messageHandlers.duplicateCheck.postMessage(expression);
     const mineButton = el('button', {
-        className: 'mine-button' + (isDuplicate ? ' duplicate' : '') + (isDuplicate && !window.allowDupes ? ' disabled' : ''),
-        textContent: isDuplicate ? '✓' : '+',
-        disabled: isDuplicate && !window.allowDupes,
+        className: 'mine-button',
+        textContent: '+',
+        disabled: true,
         ontouchstart: () => {
             lastSelection = window.getSelection()?.toString() || '';
         },
         onclick: async () => {
-            await mineEntry(expression, reading, frequencies, pitches, rules, matched, idx, lastSelection);
-            setTimeout(async () => {
+            mineButton.disabled = true;
+            const isAnkiConnect = await mineEntry(expression, reading, frequencies, pitches, rules, matched, idx, lastSelection);
+            const checkDuplicate = async () => {
                 const wasAdded = await webkit.messageHandlers.duplicateCheck.postMessage(expression);
+                mineButton.textContent = wasAdded ? '✓' : '+';
                 if (wasAdded) {
-                    mineButton.textContent = '✓';
                     mineButton.classList.add('duplicate');
-                    if (!window.allowDupes) {
-                        mineButton.classList.add('disabled');
-                        mineButton.disabled = true;
-                    }
                 }
-            }, 1500);
+                mineButton.disabled = wasAdded && !window.allowDupes;
+            };
+            
+            if (isAnkiConnect) {
+                await checkDuplicate();
+            } else {
+                setTimeout(checkDuplicate, 1000);
+            }
         }
     });
     buttonsContainer.appendChild(mineButton);
+    webkit.messageHandlers.duplicateCheck.postMessage(expression).then(isDuplicate => {
+        if (isDuplicate) {
+            mineButton.textContent = '✓';
+            mineButton.classList.add('duplicate');
+        }
+        mineButton.disabled = isDuplicate && !window.allowDupes;
+    });
     
     header.appendChild(buttonsContainer);
     
@@ -1307,7 +1317,7 @@ window.renderPopup = function() {
             }
             
             const entryDiv = el('div', { className: 'entry' });
-            entryDiv.appendChild(await createEntryHeader(entry, idx));
+            entryDiv.appendChild(createEntryHeader(entry, idx));
             
             if (window.audioEnableAutoplay && window.audioSources?.length && idx == 0) {
                 setTimeout(() => {

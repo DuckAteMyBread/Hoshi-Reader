@@ -43,6 +43,10 @@ class UserConfig {
         didSet { UserDefaults.standard.set(bookshelfSortOption.rawValue, forKey: "bookshelfSortOption") }
     }
     
+    var dictionaryTabDefault: Bool {
+        didSet { UserDefaults.standard.set(dictionaryTabDefault, forKey: "dictionaryTabDefault") }
+    }
+    
     var maxResults: Int {
         didSet { UserDefaults.standard.set(maxResults, forKey: "maxResults") }
     }
@@ -79,6 +83,10 @@ class UserConfig {
         didSet { UserDefaults.standard.set(uiTheme.rawValue, forKey: "uiTheme") }
     }
     
+    var systemLightSepia: Bool {
+        didSet { UserDefaults.standard.set(systemLightSepia, forKey: "systemLightSepia") }
+    }
+    
     var customBackgroundColor: Color {
         didSet { Self.saveColor(customBackgroundColor, key: "customBackgroundColor") }
     }
@@ -105,6 +113,14 @@ class UserConfig {
     
     var readerHideFurigana: Bool {
         didSet { UserDefaults.standard.set(readerHideFurigana, forKey: "readerHideFurigana") }
+    }
+    
+    var continuousMode: Bool {
+        didSet { UserDefaults.standard.set(continuousMode, forKey: "continuousMode") }
+    }
+    
+    var chapterSwipeDistance: Int {
+        didSet { UserDefaults.standard.set(chapterSwipeDistance, forKey: "chapterSwipeDistance") }
     }
     
     var horizontalPadding: Int {
@@ -245,6 +261,7 @@ class UserConfig {
         self.bookshelfSortOption = defaults.string(forKey: "bookshelfSortOption")
             .flatMap(SortOption.init) ?? .recent
         
+        self.dictionaryTabDefault = defaults.object(forKey: "dictionaryTabDefault") as? Bool ?? false
         self.maxResults = defaults.object(forKey: "maxResults") as? Int ?? 16
         self.scanLength = defaults.object(forKey: "scanLength") as? Int ?? 16
         self.collapseDictionaries = defaults.object(forKey: "collapseDictionaries") as? Bool ?? false
@@ -259,6 +276,7 @@ class UserConfig {
             .flatMap(Themes.init) ?? .system
         self.uiTheme = defaults.string(forKey: "uiTheme")
             .flatMap(Themes.init) ?? .system
+        self.systemLightSepia = defaults.object(forKey: "systemLightSepia") as? Bool ?? false
         self.customBackgroundColor = UserConfig.loadColor(key: "customBackgroundColor") ?? Color(.sRGB, red: 1, green: 1, blue: 1)
         self.customTextColor = UserConfig.loadColor(key: "customTextColor") ?? Color(.sRGB, red: 0, green: 0, blue: 0)
         self.customInfoColor = UserConfig.loadColor(key: "customInfoColor") ?? Color(.sRGB, red: 0.6, green: 0.6, blue: 0.6)
@@ -268,6 +286,8 @@ class UserConfig {
         self.fontSize = defaults.object(forKey: "fontSize") as? Int ?? 22
         self.readerHideFurigana = defaults.object(forKey: "readerHideFurigana") as? Bool ?? false
         
+        self.continuousMode = defaults.object(forKey: "continuousMode") as? Bool ?? false
+        self.chapterSwipeDistance = defaults.object(forKey: "chapterSwipeDistance") as? Int ?? 20
         self.horizontalPadding = defaults.object(forKey: "layoutHorizontalPadding") as? Int ?? 5
         self.verticalPadding = defaults.object(forKey: "layoutVerticalPadding") as? Int ?? 0
         self.avoidPageBreak = defaults.object(forKey: "avoidPageBreak") as? Bool ?? false

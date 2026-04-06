@@ -47,7 +47,7 @@ struct DictionarySearchView: View {
                     dictionaryStyles: dictionaryStyles,
                     lookupEntries: lookupEntries,
                     onMine: { minedContent in
-                        AnkiManager.shared.addNote(content: minedContent, context: MiningContext(sentence: lastQuery, documentTitle: nil, coverURL: nil))
+                        await AnkiManager.shared.addNote(content: minedContent, context: MiningContext(sentence: lastQuery, documentTitle: nil, coverURL: nil))
                     },
                     onTextSelected: {
                         closePopups()
