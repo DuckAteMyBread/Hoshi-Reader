@@ -765,7 +765,7 @@ async function mineEntry(expression, reading, frequencies, pitches, rules, match
     
     const audio = audioUrls[idx] || '';
     
-    webkit.messageHandlers.mineEntry.postMessage({
+    return await webkit.messageHandlers.mineEntry.postMessage({
         expression,
         reading,
         matched,
@@ -1165,15 +1165,21 @@ function createEntryHeader(entry, idx) {
         },
         onclick: async () => {
             mineButton.disabled = true;
-            await mineEntry(expression, reading, frequencies, pitches, rules, matched, idx, lastSelection);
-            setTimeout(async () => {
+            const isAnkiConnect = await mineEntry(expression, reading, frequencies, pitches, rules, matched, idx, lastSelection);
+            const checkDuplicate = async () => {
                 const wasAdded = await webkit.messageHandlers.duplicateCheck.postMessage(expression);
                 mineButton.textContent = wasAdded ? '✓' : '+';
                 if (wasAdded) {
                     mineButton.classList.add('duplicate');
                 }
                 mineButton.disabled = wasAdded && !window.allowDupes;
-            }, 1000);
+            };
+            
+            if (isAnkiConnect) {
+                await checkDuplicate();
+            } else {
+                setTimeout(checkDuplicate, 1000);
+            }
         }
     });
     buttonsContainer.appendChild(mineButton);

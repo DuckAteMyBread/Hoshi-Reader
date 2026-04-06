@@ -171,15 +171,14 @@ class AnkiManager {
         }
     }
     
-    func addNote(content: [String: String], context: MiningContext) {
+    func addNote(content: [String: String], context: MiningContext) async -> Bool {
         guard let deck = selectedDeck,
               let noteType = selectedNoteType else {
-            return
+            return false
         }
         
         if useAnkiConnect {
-            Task { await addNoteAnkiConnect(content: content, context: context, deck: deck, noteType: noteType) }
-            return
+            return await addNoteAnkiConnect(content: content, context: context, deck: deck, noteType: noteType)
         }
         
         let singleGlossaries: [String: String]
@@ -221,11 +220,13 @@ class AnkiManager {
         urlComponents?.queryItems = queryItems
         
         if let url = urlComponents?.url {
-            UIApplication.shared.open(url)
+            await UIApplication.shared.open(url)
         }
+        
+        return false
     }
     
-    private func addNoteAnkiConnect(content: [String: String], context: MiningContext, deck: String, noteType: String) async {
+    private func addNoteAnkiConnect(content: [String: String], context: MiningContext, deck: String, noteType: String) async -> Bool {
         let singleGlossaries: [String: String]
         if let json = content["singleGlossaries"],
            let data = json.data(using: .utf8),
@@ -310,7 +311,10 @@ class AnkiManager {
             if ankiConnectConfig?.forceSync == true {
                 await syncAnkiConnect()
             }
-        } catch {}
+            return true
+        } catch {
+            return false
+        }
     }
     
     func checkDuplicate(word: String) async -> Bool {

@@ -108,7 +108,7 @@ struct PopupWebView: UIViewRepresentable {
     var clearHighlight: Bool
     var dictionaryStyles: [String: String] = [:]
     var lookupEntries: [[String: Any]] = []
-    var onMine: (([String: String]) -> Void)? = nil
+    var onMine: (([String: String]) async -> Bool)? = nil
     var onTextSelected: ((SelectionData) -> Int?)? = nil
     var onTapOutside: (() -> Void)? = nil
     var onSwipeDismiss: (() -> Void)? = nil
@@ -163,12 +163,12 @@ struct PopupWebView: UIViewRepresentable {
     
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        config.userContentController.add(context.coordinator, name: "mineEntry")
         config.userContentController.add(context.coordinator, name: "openLink")
         config.userContentController.add(context.coordinator, name: "textSelected")
         config.userContentController.add(context.coordinator, name: "tapOutside")
         config.userContentController.add(context.coordinator, name: "swipeDismiss")
         config.userContentController.add(context.coordinator, name: "playWordAudio")
+        config.userContentController.addScriptMessageHandler(context.coordinator, contentWorld: .page, name: "mineEntry")
         config.userContentController.addScriptMessageHandler(context.coordinator, contentWorld: .page, name: "duplicateCheck")
         config.userContentController.addScriptMessageHandler(context.coordinator, contentWorld: .page, name: "getEntry")
         config.setURLSchemeHandler(AudioHandler(), forURLScheme: "audio")
@@ -204,12 +204,12 @@ struct PopupWebView: UIViewRepresentable {
         Task {
             await WordAudioPlayer.shared.stop(id: coordinator.id)
         }
-        webView.configuration.userContentController.removeScriptMessageHandler(forName: "mineEntry")
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "openLink")
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "textSelected")
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "tapOutside")
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "swipeDismiss")
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "playWordAudio")
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "mineEntry", contentWorld: .page)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "duplicateCheck", contentWorld: .page)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "getEntry", contentWorld: .page)
     }
@@ -243,6 +243,9 @@ struct PopupWebView: UIViewRepresentable {
         }
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) async -> (Any?, String?) {
+            if message.name == "mineEntry", let content = message.body as? [String: String] {
+                return (await parent.onMine?(content) ?? false, nil)
+            }
             if message.name == "duplicateCheck", let word = message.body as? String {
                 return (await AnkiManager.shared.checkDuplicate(word: word), nil)
             }
@@ -253,10 +256,7 @@ struct PopupWebView: UIViewRepresentable {
         }
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            if message.name == "mineEntry", let content = message.body as? [String: String] {
-                parent.onMine?(content)
-            }
-            else if message.name == "openLink", let urlString = message.body as? String,
+            if message.name == "openLink", let urlString = message.body as? String,
                     let url = URL(string: urlString) {
                 UIApplication.shared.open(url)
             }
