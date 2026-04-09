@@ -264,11 +264,18 @@ struct ReaderWebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             let pageHeight = Int(parent.viewSize.height)
             let pageWidth = Int(parent.viewSize.width)
+            
+            var verticalPadding = Double(parent.userConfig.verticalPadding)
+            if !parent.userConfig.justifyText && parent.userConfig.verticalWriting {
+                verticalPadding = verticalPadding + (parent.userConfig.fontSize % 2 == 0 ? 1 : 2)
+            }
+            let horizontalPadding = Double(parent.userConfig.horizontalPadding)
+            
             let writingMode = parent.userConfig.verticalWriting ? "vertical-rl" : "horizontal-tb"
             let columnGapUnit = parent.userConfig.verticalWriting ? "vh" : "vw"
             let columnGapValue = parent.userConfig.verticalWriting
-            ? parent.userConfig.verticalPadding
-            : parent.userConfig.horizontalPadding
+            ? verticalPadding
+            : horizontalPadding
             
             let textColorCss = """
             @media (prefers-color-scheme: light) { :root { --hoshi-text-color: #000; } }
@@ -313,6 +320,15 @@ struct ReaderWebView: UIViewRepresentable {
                 """
             }
             
+            var gridCss = ""
+            if !parent.userConfig.justifyText {
+                gridCss = """
+                text-align: start !important;
+                hanging-punctuation: allow-end !important;
+                line-break: strict !important;
+                """
+            }
+            
             let css = """
             \(fontFaceCss)
             :root {
@@ -334,11 +350,12 @@ struct ReaderWebView: UIViewRepresentable {
                 box-sizing: border-box !important;
                 column-width: var(--page-width, 100vw) !important;
                 column-gap: \(columnGapValue)\(columnGapUnit);
-                padding: \(Double(parent.userConfig.verticalPadding) / 2)vh \(Double(parent.userConfig.horizontalPadding) / 2)vw !important;
+                padding: \(verticalPadding / 2)vh \(horizontalPadding / 2)vw !important;
+                \(gridCss)
             }
             img.block-img {
-                max-width: \(100 - parent.userConfig.horizontalPadding)vw !important;
-                max-height: \(100 - parent.userConfig.verticalPadding)vh !important;
+                max-width: \(100 - horizontalPadding)vw !important;
+                max-height: \(100 - verticalPadding)vh !important;
                 width: auto !important;
                 height: auto !important;
                 display: block !important;
@@ -348,8 +365,8 @@ struct ReaderWebView: UIViewRepresentable {
                 object-fit: contain !important;
             }
             svg {
-                max-width: \(100 - parent.userConfig.horizontalPadding)vw !important;
-                max-height: \(100 - parent.userConfig.verticalPadding)vh !important;
+                max-width: \(100 - horizontalPadding)vw !important;
+                max-height: \(100 - verticalPadding)vh !important;
                 width: 100% !important;
                 height: 100% !important;
                 display: block !important;
@@ -374,21 +391,21 @@ struct ReaderWebView: UIViewRepresentable {
             
             let spacerJs: String = {
                 if parent.userConfig.verticalWriting {
-                    guard parent.userConfig.verticalPadding > 0 else { return "" }
+                    guard verticalPadding > 0 else { return "" }
                     return """
                     var spacer = document.createElement('div');
-                    spacer.style.height = '\(Double(parent.userConfig.verticalPadding) / 2)vh';
+                    spacer.style.height = '\(verticalPadding / 2)vh';
                     spacer.style.width = '100%';
                     spacer.style.display = 'block';
                     spacer.style.breakInside = 'avoid';
                     document.body.appendChild(spacer);
                     """
                 } else {
-                    guard parent.userConfig.horizontalPadding > 0 else { return "" }
+                    guard horizontalPadding > 0 else { return "" }
                     return """
                     var spacer = document.createElement('div');
                     spacer.style.height = '100%';
-                    spacer.style.width = '\(Double(parent.userConfig.horizontalPadding) / 2)vw';
+                    spacer.style.width = '\(horizontalPadding / 2)vw';
                     spacer.style.display = 'block';
                     spacer.style.breakInside = 'avoid';
                     document.body.appendChild(spacer);

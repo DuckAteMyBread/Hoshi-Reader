@@ -254,8 +254,23 @@ struct ScrollReaderWebView: UIViewRepresentable {
                 """
             }
             
-            let imgWidth = parent.userConfig.verticalWriting ? "none" : "\(100 - parent.userConfig.horizontalPadding)vw"
-            let imgHeight = parent.userConfig.verticalWriting ? "\(100 - parent.userConfig.verticalPadding)vh" : "none"
+            var verticalPadding = Double(parent.userConfig.verticalPadding)
+            if !parent.userConfig.justifyText && parent.userConfig.verticalWriting {
+                verticalPadding = verticalPadding + (parent.userConfig.fontSize % 2 == 0 ? 1 : 2)
+            }
+            let horizontalPadding = Double(parent.userConfig.horizontalPadding)
+            
+            let imgWidth = parent.userConfig.verticalWriting ? "none" : "\(100 - horizontalPadding)vw"
+            let imgHeight = parent.userConfig.verticalWriting ? "\(100 - verticalPadding)vh" : "none"
+            
+            var gridCss = ""
+            if !parent.userConfig.justifyText {
+                gridCss = """
+                text-align: start !important;
+                hanging-punctuation: allow-end !important;
+                line-break: strict !important;
+                """
+            }
             
             let css = """
             \(fontFaceCss)
@@ -273,7 +288,8 @@ struct ScrollReaderWebView: UIViewRepresentable {
                 font-size: \(parent.userConfig.fontSize)px !important;
                 \(textSpacingCss)
                 box-sizing: border-box !important;
-                padding: \(Double(parent.userConfig.verticalPadding) / 2)vh \(Double(parent.userConfig.horizontalPadding) / 2)vw !important;
+                padding: \(verticalPadding) / 2)vh \(horizontalPadding) / 2)vw !important;
+                \(gridCss)
             }
             img.block-img {
                 max-width: \(imgWidth) !important;

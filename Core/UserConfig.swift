@@ -135,6 +135,10 @@ class UserConfig {
         didSet { UserDefaults.standard.set(avoidPageBreak, forKey: "avoidPageBreak") }
     }
     
+    var justifyText: Bool {
+        didSet { UserDefaults.standard.set(justifyText, forKey: "justifyText") }
+    }
+    
     var layoutAdvanced: Bool {
         didSet { UserDefaults.standard.set(layoutAdvanced, forKey: "layoutAdvanced") }
     }
@@ -311,6 +315,7 @@ class UserConfig {
         self.horizontalPadding = defaults.object(forKey: "layoutHorizontalPadding") as? Int ?? 5
         self.verticalPadding = defaults.object(forKey: "layoutVerticalPadding") as? Int ?? 0
         self.avoidPageBreak = defaults.object(forKey: "avoidPageBreak") as? Bool ?? false
+        self.justifyText = defaults.object(forKey: "justifyText") as? Bool ?? false
         self.layoutAdvanced = defaults.object(forKey: "layoutAdvanced") as? Bool ?? false
         self.lineHeight = defaults.object(forKey: "lineHeight") as? Double ?? 1.65
         self.characterSpacing = defaults.object(forKey: "characterSpacing") as? Double ?? 0

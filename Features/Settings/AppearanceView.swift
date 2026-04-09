@@ -164,6 +164,8 @@ struct AppearanceView: View {
                     
                     Toggle("Avoid Page Break", isOn: $userConfig.avoidPageBreak)
                     
+                    Toggle("Justify Text", isOn: $userConfig.justifyText)
+                    
                     Toggle("Advanced", isOn: $userConfig.layoutAdvanced)
                     if userConfig.layoutAdvanced {
                         VStack {

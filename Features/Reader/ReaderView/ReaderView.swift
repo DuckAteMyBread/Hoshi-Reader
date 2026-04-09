@@ -17,6 +17,7 @@ struct WebViewState: Hashable {
     var horizontalPadding: Int
     var verticalPadding: Int
     var avoidPageBreak: Bool
+    var justifyText: Bool
     var layoutAdvanced: Bool
     var lineHeight: Double
     var characterSpacing: Double
@@ -139,6 +140,7 @@ struct ReaderView: View {
                             horizontalPadding: userConfig.horizontalPadding,
                             verticalPadding: userConfig.verticalPadding,
                             avoidPageBreak: userConfig.avoidPageBreak,
+                            justifyText: userConfig.justifyText,
                             layoutAdvanced: userConfig.layoutAdvanced,
                             lineHeight: userConfig.lineHeight,
                             characterSpacing: userConfig.characterSpacing,
@@ -177,6 +179,7 @@ struct ReaderView: View {
                             horizontalPadding: userConfig.horizontalPadding,
                             verticalPadding: userConfig.verticalPadding,
                             avoidPageBreak: userConfig.avoidPageBreak,
+                            justifyText: userConfig.justifyText,
                             layoutAdvanced: userConfig.layoutAdvanced,
                             lineHeight: userConfig.lineHeight,
                             characterSpacing: userConfig.characterSpacing,
