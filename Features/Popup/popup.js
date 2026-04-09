@@ -948,6 +948,14 @@ function createFrequencyGroup(freqGroup) {
     ]);
 }
 
+function createHarmonicFrequencyTag(frequencies) {
+    const rank = getFrequencyHarmonicRank(frequencies);
+    return el('span', { className: 'frequency-group harmonic-frequency' }, [
+        el('span', { className: 'frequency-dict-label', textContent: 'Average' }),
+        el('span', { className: 'frequency-values', textContent: rank })
+    ]);
+}
+
 // https://github.com/yomidevs/yomitan/blob/c24d4c9b39ceec1b5fd133df774c41972e9ebbdc/ext/js/language/ja/japanese.js#L350
 function isMoraPitchHigh(moraIndex, pitchAccentValue) {
     switch (pitchAccentValue) {
@@ -1053,9 +1061,28 @@ function createTags(entry) {
     }
     
     if (hasFrequencies) {
-        const freqContainer = el('div', { className: 'tag-row' });
-        frequencies.forEach(freq => freqContainer.appendChild(createFrequencyGroup(freq)));
-        container.appendChild(freqContainer);
+        if (window.harmonicFrequency) {
+            const normalRow = el('div', { className: 'tag-row', style: 'display:none' });
+            frequencies.forEach(freq => normalRow.appendChild(createFrequencyGroup(freq)));
+            
+            const harmonicRow = el('div', { className: 'tag-row' });
+            harmonicRow.appendChild(createHarmonicFrequencyTag(frequencies));
+            
+            const toggle = () => {
+                const swap = harmonicRow.style.display !== 'none';
+                harmonicRow.style.display = swap ? 'none' : '';
+                normalRow.style.display = swap ? '' : 'none';
+            };
+            
+            normalRow.addEventListener('click', toggle);
+            harmonicRow.addEventListener('click', toggle);
+            container.appendChild(harmonicRow);
+            container.appendChild(normalRow);
+        } else {
+            const freqContainer = el('div', { className: 'tag-row' });
+            frequencies.forEach(freq => freqContainer.appendChild(createFrequencyGroup(freq)));
+            container.appendChild(freqContainer);
+        }
     }
     
     if (hasPitches) {

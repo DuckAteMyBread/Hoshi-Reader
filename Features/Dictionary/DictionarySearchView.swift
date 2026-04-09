@@ -295,6 +295,7 @@ struct DictionarySearchView: View {
         <script>
             window.collapseDictionaries = \(userConfig.collapseDictionaries);
             window.compactGlossaries = \(userConfig.compactGlossaries);
+            window.harmonicFrequency = \(userConfig.harmonicFrequency);
             window.audioSources = \(audioSources);
             window.audioEnableAutoplay = \(userConfig.audioEnableAutoplay);
             window.audioPlaybackMode = "\(userConfig.audioPlaybackMode.rawValue)";

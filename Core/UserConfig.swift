@@ -63,6 +63,10 @@ class UserConfig {
         didSet { UserDefaults.standard.set(compactGlossaries, forKey: "compactGlossaries") }
     }
     
+    var harmonicFrequency: Bool {
+        didSet { UserDefaults.standard.set(harmonicFrequency, forKey: "harmonicFrequency") }
+    }
+    
     var enableSync: Bool {
         didSet { UserDefaults.standard.set(enableSync, forKey: "enableSync") }
     }
@@ -290,6 +294,7 @@ class UserConfig {
         self.scanLength = defaults.object(forKey: "scanLength") as? Int ?? 16
         self.collapseDictionaries = defaults.object(forKey: "collapseDictionaries") as? Bool ?? false
         self.compactGlossaries = defaults.object(forKey: "compactGlossaries") as? Bool ?? true
+        self.harmonicFrequency = defaults.object(forKey: "harmonicFrequency") as? Bool ?? false
         
         self.enableSync = defaults.object(forKey: "enableSync") as? Bool ?? false
         self.syncMode = defaults.string(forKey: "syncMode")
