@@ -128,6 +128,7 @@ struct ReaderView: View {
                                     viewModel.startTracking()
                                 }
                             },
+                            onProgressChanged: viewModel.updateProgress,
                             onRestoreCompleted: {
                                 viewModel.handleRestoreCompleted()
                             }

@@ -21,6 +21,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
     var onTextSelected: ((SelectionData) -> Int?)?
     var onTapOutside: (() -> Void)?
     var onScroll: (() -> Void)?
+    var onProgressChanged: ((Double) -> Void)?
     var onRestoreCompleted: (() -> Void)?
     let maxSelectionLength: Int = 16
     
@@ -138,6 +139,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
         var pendingFragment: String?
         var pendingSasayakiCues: String?
         var shouldSyncProgressAfterRestore = false
+        var lastProgressUpdate: CFTimeInterval = 0
         
         init(_ parent: ScrollReaderWebView) {
             self.parent = parent
@@ -538,17 +540,25 @@ struct ScrollReaderWebView: UIViewRepresentable {
             }
         }
         
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            parent.onScroll?()
+            let now = CACurrentMediaTime()
+            guard now - lastProgressUpdate >= 0.05 else { return }
+            lastProgressUpdate = now
+            fetchCurrentProgress { [weak self] progress in
+                self?.parent.onProgressChanged?(progress)
+            }
+        }
+        
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
             saveBookmark()
             clearHighlight()
-            parent.onScroll?()
         }
         
         func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
             if !decelerate {
                 saveBookmark()
                 clearHighlight()
-                parent.onScroll?()
             }
         }
     }

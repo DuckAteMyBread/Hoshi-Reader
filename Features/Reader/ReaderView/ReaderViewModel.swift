@@ -213,6 +213,10 @@ class ReaderViewModel {
         return document.contentDirectory.appendingPathComponent(manifestItem.path)
     }
     
+    func updateProgress(_ progress: Double) {
+        currentProgress = progress
+    }
+    
     func saveBookmark(progress: Double) {
         persistBookmark(progress: progress)
         flushStats()
