@@ -66,6 +66,10 @@ class UserConfig {
     var harmonicFrequency: Bool {
         didSet { UserDefaults.standard.set(harmonicFrequency, forKey: "harmonicFrequency") }
     }
+
+    var deduplicatePitchAccents: Bool {
+        didSet { UserDefaults.standard.set(deduplicatePitchAccents, forKey: "deduplicatePitchAccents") }
+    }
     
     var enableSync: Bool {
         didSet { UserDefaults.standard.set(enableSync, forKey: "enableSync") }
@@ -295,6 +299,7 @@ class UserConfig {
         self.collapseDictionaries = defaults.object(forKey: "collapseDictionaries") as? Bool ?? false
         self.compactGlossaries = defaults.object(forKey: "compactGlossaries") as? Bool ?? true
         self.harmonicFrequency = defaults.object(forKey: "harmonicFrequency") as? Bool ?? false
+        self.deduplicatePitchAccents = defaults.object(forKey: "deduplicatePitchAccents") as? Bool ?? false
         
         self.enableSync = defaults.object(forKey: "enableSync") as? Bool ?? false
         self.syncMode = defaults.string(forKey: "syncMode")

@@ -74,6 +74,7 @@ struct DictionaryView: View {
                 Toggle("Auto-collapse Dictionaries", isOn: Bindable(userConfig).collapseDictionaries)
                 Toggle("Compact Glossaries", isOn: Bindable(userConfig).compactGlossaries)
                 Toggle("Harmonic Frequency", isOn: Bindable(userConfig).harmonicFrequency)
+                Toggle("Deduplicate Pitch Accents", isOn: Bindable(userConfig).deduplicatePitchAccents)
             } header: {
                 Text("Settings")
             }

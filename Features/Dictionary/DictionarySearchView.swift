@@ -300,6 +300,7 @@ struct DictionarySearchView: View {
             window.collapseDictionaries = \(userConfig.collapseDictionaries);
             window.compactGlossaries = \(userConfig.compactGlossaries);
             window.harmonicFrequency = \(userConfig.harmonicFrequency);
+            window.deduplicatePitchAccents = \(userConfig.deduplicatePitchAccents);
             window.audioSources = \(audioSources);
             window.audioEnableAutoplay = \(userConfig.audioEnableAutoplay);
             window.audioPlaybackMode = "\(userConfig.audioPlaybackMode.rawValue)";

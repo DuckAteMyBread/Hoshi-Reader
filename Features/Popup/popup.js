@@ -1087,7 +1087,18 @@ function createTags(entry) {
     
     if (hasPitches) {
         const pitchContainer = el('div', { className: 'pitch-list' });
-        pitches.forEach(pitch => pitchContainer.appendChild(createPitchGroup(pitch, reading)));
+        if (window.deduplicatePitchAccents) {
+            const seen = new Set();
+            pitches.forEach(pitch => {
+                const unique = pitch.pitchPositions.filter(pos => !seen.has(pos));
+                if (unique.length > 0) {
+                    unique.forEach(pos => seen.add(pos));
+                    pitchContainer.appendChild(createPitchGroup({ dictionary: pitch.dictionary, pitchPositions: unique }, reading));
+                }
+            });
+        } else {
+            pitches.forEach(pitch => pitchContainer.appendChild(createPitchGroup(pitch, reading)));
+        }
         container.appendChild(pitchContainer);
     }
     
