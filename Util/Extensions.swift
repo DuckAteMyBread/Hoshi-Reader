@@ -16,7 +16,7 @@ extension String {
         if let bodyRange = text.range(of: "(?s)<body.*?</body>", options: .regularExpression) {
             text = String(text[bodyRange])
         }
-        text = text.replacingOccurrences(of: "(?s)<rt>.*?</rt>", with: "", options: .regularExpression)
+        text = text.replacingOccurrences(of: "(?s)<rt[^>]*>.*?</rt>", with: "", options: .regularExpression)
         text = text.replacingOccurrences(of: "(?s)<(script|style)[^>]*>.*?</\\1>", with: "", options: .regularExpression)
         text = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
         text = text.replacingOccurrences(of: "&nbsp;", with: " ")
