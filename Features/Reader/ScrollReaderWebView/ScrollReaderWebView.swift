@@ -72,6 +72,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
                     context.coordinator.pendingProgress = progress
                     context.coordinator.pendingFragment = fragment
                     context.coordinator.pendingSasayakiCues = sasayakiCues
+                    context.coordinator.isRestoring = true
                     if let appDirectory = try? BookStorage.getAppDirectory() {
                         webView.scrollView.delegate = nil
                         webView.alpha = 0
@@ -81,6 +82,8 @@ struct ScrollReaderWebView: UIViewRepresentable {
                     context.coordinator.pendingProgress = progress
                     context.coordinator.pendingFragment = nil
                     context.coordinator.shouldSyncProgressAfterRestore = false
+                    context.coordinator.isRestoring = true
+                    webView.scrollView.delegate = nil
                     webView.evaluateJavaScript("window.hoshiReader.restoreProgress(\(progress))") { _, _ in }
                 case .jumpToFragment(let fragment):
                     context.coordinator.jumpToFragment(fragment)
@@ -119,6 +122,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
             context.coordinator.pendingProgress = bridge.progress
             context.coordinator.pendingFragment = nil
             context.coordinator.pendingSasayakiCues = bridge.sasayakiCues
+            context.coordinator.isRestoring = true
             guard let appDirectory = try? BookStorage.getAppDirectory() else { return }
             webView.scrollView.delegate = nil
             webView.alpha = 0
@@ -140,6 +144,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
         var pendingSasayakiCues: String?
         var shouldSyncProgressAfterRestore = false
         var lastProgressUpdate: CFTimeInterval = 0
+        var isRestoring = true
         
         init(_ parent: ScrollReaderWebView) {
             self.parent = parent
@@ -147,7 +152,6 @@ struct ScrollReaderWebView: UIViewRepresentable {
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             if message.name == "restoreCompleted" {
-                webView?.scrollView.delegate = self
                 if shouldSyncProgressAfterRestore {
                     shouldSyncProgressAfterRestore = false
                     syncLinkJumpProgress()
@@ -156,6 +160,11 @@ struct ScrollReaderWebView: UIViewRepresentable {
                     message.webView?.alpha = 1
                 }
                 parent.onRestoreCompleted?()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                    guard let self else { return }
+                    self.webView?.scrollView.delegate = self
+                    self.isRestoring = false
+                }
             }
             else if message.name == "textSelected" {
                 guard let body = message.body as? [String: Any],
@@ -444,6 +453,8 @@ struct ScrollReaderWebView: UIViewRepresentable {
                 return
             }
             shouldSyncProgressAfterRestore = true
+            isRestoring = true
+            webView.scrollView.delegate = nil
             let script = "window.hoshiReader.jumpToFragment(\(javaScriptStringLiteral(fragment)))"
             webView.evaluateJavaScript(script) { _, _ in }
         }
@@ -541,6 +552,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
         }
         
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            guard !isRestoring else { return }
             parent.onScroll?()
             let now = CACurrentMediaTime()
             guard now - lastProgressUpdate >= 0.05 else { return }
