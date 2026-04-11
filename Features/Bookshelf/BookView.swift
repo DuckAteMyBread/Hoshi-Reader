@@ -85,17 +85,8 @@ struct BookCover: View {
             
             if let progress {
                 HStack(spacing: 8) {
-                    GeometryReader { proxy in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(.primary.opacity(0.10))
-                            Capsule()
-                                .fill(.primary.opacity(0.36))
-                                .frame(width: proxy.size.width * progress)
-                        }
-                    }
-                    .frame(height: 4)
-                    
+                    ProgressView(value: progress)
+                         .tint(.secondary.opacity(0.4))
                     Text(String(format: "%.1f%%", progress * 100))
                         .font(.caption2)
                         .fontWeight(.medium)
