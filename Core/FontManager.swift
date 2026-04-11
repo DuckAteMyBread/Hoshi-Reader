@@ -33,12 +33,10 @@ class FontManager {
         
         return try FileManager.default.contentsOfDirectory(
             at: directory,
-            includingPropertiesForKeys: [.isDirectoryKey],
+            includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
         )
-        .filter { url in
-            (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true
-        }
+        .filter { $0.lastPathComponent != "System" }
     }
     
     func storedFontUrl(name: String) throws -> URL?  {
