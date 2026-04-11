@@ -290,16 +290,13 @@ struct ReaderWebView: UIViewRepresentable {
             }()
             
             var fontFaceCss = ""
-            if !FontManager.shared.isDefaultFont(name: parent.userConfig.selectedFont) {
-                if let fontURL = try? FontManager.shared.getFontUrl(name: parent.userConfig.selectedFont) {
-                    let fontType = fontURL.pathExtension.lowercased()
-                    fontFaceCss = """
-                    @font-face {
-                        font-family: '\(parent.userConfig.selectedFont)';
-                        src: url('\(fontURL.absoluteString)') format('\(fontType == "otf" ? "opentype" : "truetype")');
-                    }
-                    """
+            if let fontURL = try? FontManager.shared.fontUrl(name: parent.userConfig.selectedFont, verticalWriting: parent.userConfig.verticalWriting) {
+                fontFaceCss = """
+                @font-face {
+                    font-family: \(parent.userConfig.selectedFont);
+                    src: url('\(fontURL.absoluteString)');
                 }
+                """
             }
             
             var pageBreakCss = ""
