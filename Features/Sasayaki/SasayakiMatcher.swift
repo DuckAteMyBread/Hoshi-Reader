@@ -39,6 +39,10 @@ struct SasayakiMatcher {
         var start = 0
         var minStart: Int?
         for cue in cues.prefix(15) {
+            if cue.text.hasPrefix("＊") {
+                continue
+            }
+            
             let text = Array(cue.text.filtered())
             if text.count < 6 {
                 continue
