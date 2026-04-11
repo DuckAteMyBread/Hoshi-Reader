@@ -46,4 +46,12 @@ class TokenStorage {
         delete("refreshToken")
         delete("clientId")
     }
+    
+    static func clearOldKeys() {
+        if UserDefaults.standard.bool(forKey: "TokenStorage.didClear") {
+            return
+        }
+        clear()
+        UserDefaults.standard.set(true, forKey: "TokenStorage.didClear")
+    }
 }

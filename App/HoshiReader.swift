@@ -22,6 +22,7 @@ struct HoshiReaderApp: App {
     private var shortcutHandler = ShortcutHandler.shared
     
     init() {
+        TokenStorage.clearOldKeys()
         BookStorage.migrateFromDocuments()
         WebViewPreloader.shared.warmup()
         _ = DictionaryManager.shared
