@@ -103,7 +103,9 @@ struct ReaderView: View {
         // if you tab out and tab back in, the area recalculates causing the reader to be misaligned
         VStack(spacing: 0) {
             Color.clear
-                .frame(height: max(topSafeArea, 25) + webViewPadding + (userConfig.readerShowProgressTop && !progressString.isEmpty ? lineHeight : 0) + (userConfig.readerShowTitle ? lineHeight : 0))
+                .frame(height: max(topSafeArea, 25) + webViewPadding + (userConfig.readerShowProgressTop && !progressString.isEmpty ? lineHeight : 0) +
+                       (userConfig.readerShowTitle || (userConfig.enableStatistics && userConfig.readerShowStatisticsToggle)
+                        || (userConfig.enableSasayaki && userConfig.readerShowSasayakiToggle && viewModel.sasayakiPlayer.hasAudio) ? lineHeight : 0))
                 .contentShape(Rectangle())
             
             GeometryReader { geometry in
@@ -307,7 +309,7 @@ struct ReaderView: View {
                             Text(title)
                                 .font(.subheadline)
                                 .foregroundStyle(userConfig.theme == .custom ? AnyShapeStyle(userConfig.customInfoColor.opacity(0.5)) : AnyShapeStyle(.tertiary))
-                                .padding(.horizontal, 30)
+                                .padding(.horizontal, (userConfig.readerShowStatisticsToggle && userConfig.enableStatistics || userConfig.readerShowSasayakiToggle && userConfig.enableSasayaki && viewModel.sasayakiPlayer.hasAudio) ? 45 : 30)
                                 .lineLimit(1)
                         }
                     }
@@ -321,6 +323,40 @@ struct ReaderView: View {
                 }
             }
             .padding(.top, max(topSafeArea, 25))
+        }
+        .overlay(alignment: .topLeading) {
+            if userConfig.enableStatistics && userConfig.readerShowStatisticsToggle {
+                Button {
+                    if viewModel.isTracking {
+                        viewModel.stopTracking()
+                    } else {
+                        viewModel.startTracking()
+                    }
+                } label: {
+                    Image(systemName: viewModel.isTracking ? "timer" : "chart.xyaxis.line")
+                        .font(.subheadline)
+                        .frame(width: 24, height: lineHeight)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(userConfig.theme == .custom ? AnyShapeStyle(userConfig.customInfoColor) : AnyShapeStyle(.secondary))
+                .padding(.top, max(topSafeArea, 25))
+                .padding(.leading, 15)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if userConfig.enableSasayaki && userConfig.readerShowSasayakiToggle && viewModel.sasayakiPlayer.hasAudio {
+                Button {
+                    viewModel.sasayakiPlayer.togglePlayback()
+                } label: {
+                    Image(systemName: viewModel.sasayakiPlayer.isPlaying ? "pause.fill" : "waveform")
+                        .font(.subheadline)
+                        .frame(width: 24, height: lineHeight)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(userConfig.theme == .custom ? AnyShapeStyle(userConfig.customInfoColor) : AnyShapeStyle(.secondary))
+                .padding(.top, max(topSafeArea, 25))
+                .padding(.trailing, 15)
+            }
         }
         .overlay(alignment: .bottom) {
             VStack {
