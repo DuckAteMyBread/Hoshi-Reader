@@ -179,7 +179,7 @@ window.hoshiReader = {
             var maxAlignedScroll = Math.floor(maxScroll / pageSize) * pageSize;
             var currentScroll = vertical ? document.body.scrollTop : document.body.scrollLeft;
             if ((currentScroll + pageSize) <= (maxAlignedScroll + 1)) {
-                var targetScroll = currentScroll + pageSize;
+                var targetScroll = Math.round((currentScroll + pageSize) / pageSize) * pageSize;
                 window.lastPageScroll = targetScroll;
                 if (vertical) { document.body.scrollTop = targetScroll; } else { document.body.scrollLeft = targetScroll; }
                 return "scrolled";
@@ -188,7 +188,7 @@ window.hoshiReader = {
         } else {
             var currentScroll = vertical ? document.body.scrollTop : document.body.scrollLeft;
             if (currentScroll > 0) {
-                var targetScroll = currentScroll - pageSize;
+                var targetScroll = Math.round((currentScroll - pageSize) / pageSize) * pageSize;
                 window.lastPageScroll = targetScroll;
                 if (vertical) { document.body.scrollTop = targetScroll; } else { document.body.scrollLeft = targetScroll; }
                 return "scrolled";
