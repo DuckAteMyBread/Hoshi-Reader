@@ -655,14 +655,20 @@ function createDefinitionImage(data, dictionary, exporting = false) {
         }
     } else {
         const alt = nodeData?.alt || title || '';
-        const filename = window.useAnkiConnect ? getMediaFilename(dictionary, path) : null;
+        const filename = (window.useAnkiConnect || window.embedMedia) ? getMediaFilename(dictionary, path) : null;
         const image = document.createElement(filename ? 'img' : 'span');
         image.classList.add('gloss-image');
         if (filename) {
             image.alt = alt;
             image.src = filename;
-            image.width = usedWidth;
-            image.height = usedWidth * invAspectRatio;
+            if (sizeUnits === 'em') {
+                const emSize = 14;
+                const scaleFactor = 2 * window.devicePixelRatio;
+                image.width = usedWidth * emSize * scaleFactor;
+            } else {
+                image.width = usedWidth;
+            }
+            image.height = image.width * invAspectRatio;
             applyImageStyles(node, imageContainer, aspectRatioSizer, imageBackground, image, filename, appearance, sizeUnits === 'em');
         } else {
             image.textContent = alt;

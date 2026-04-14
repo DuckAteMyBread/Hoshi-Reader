@@ -27,6 +27,7 @@ class AnkiManager {
     
     var allowDupes: Bool = false
     var compactGlossaries: Bool = false
+    var embedMedia: Bool = false
     
     var errorMessage: String?
     
@@ -200,11 +201,28 @@ class AnkiManager {
             URLQueryItem(name: "type", value: noteType)
         ]
         
+        var dictionaryMedia: [String: String] = [:]
+        if embedMedia {
+            if let json = content["dictionaryMedia"] {
+                let dictMedia = (try? JSONDecoder().decode([DictionaryMedia].self, from: Data(json.utf8))) ?? []
+                for media in dictMedia {
+                    let mediaData = LookupEngine.shared.getMediaFile(dictName: media.dictionary, mediaPath: media.path)
+                    let mimeType = mimeType(for: media.path)
+                    dictionaryMedia[media.filename] = "data:\(mimeType);base64,\(mediaData.base64EncodedString())"
+                }
+            }
+        }
+        
         for (field, fieldContent) in fieldMappings {
-            let value = fieldContent.replacing(Self.handlebarRegex) { match in
+            var value = fieldContent.replacing(Self.handlebarRegex) { match in
                 return handlebarToValue(handlebar: String(match.0), context: context, content: content, singleGlossaries: singleGlossaries)
             }
             if !value.isEmpty {
+                if embedMedia {
+                    for (filename, data) in dictionaryMedia {
+                        value = value.replacingOccurrences(of: filename, with: data)
+                    }
+                }
                 queryItems.append(URLQueryItem(name: "fld" + field, value: value))
             }
         }
@@ -419,6 +437,7 @@ class AnkiManager {
             selectedNoteType: selectedNoteType,
             allowDupes: allowDupes,
             compactGlossaries: compactGlossaries,
+            embedMedia: embedMedia,
             fieldMappings: fieldMappings,
             tags: tags,
             availableDecks: availableDecks,
@@ -498,6 +517,7 @@ class AnkiManager {
         selectedNoteType = config.selectedNoteType
         allowDupes = config.allowDupes
         compactGlossaries = config.compactGlossaries ?? false
+        embedMedia = config.embedMedia ?? false
         fieldMappings = config.fieldMappings
         tags = config.tags ?? ""
         availableDecks = config.availableDecks
@@ -626,6 +646,19 @@ class AnkiManager {
         }
         
         return json["result"]
+    }
+    
+    private func mimeType(for path: String) -> String {
+        switch URL(fileURLWithPath: path).pathExtension.lowercased() {
+        case "png": return "image/png"
+        case "jpg", "jpeg": return "image/jpeg"
+        case "gif": return "image/gif"
+        case "webp": return "image/webp"
+        case "avif": return "image/avif"
+        case "heic": return "image/heic"
+        case "svg": return "image/svg+xml"
+        default: return "application/octet-stream"
+        }
     }
     
     enum AnkiConnectError: LocalizedError {

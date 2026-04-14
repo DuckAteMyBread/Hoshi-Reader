@@ -54,6 +54,20 @@ struct AnkiView: View {
                     }
                     .onChange(of: ankiManager.selectedNoteType) { _, _ in ankiManager.save() }
                     
+                    if !ankiManager.useAnkiConnect {
+                        Button("Import .colpkg (Stored Words: \(ankiManager.savedWords.count.formatted(.number.grouping(.never))))") {
+                            isImporting = true
+                        }
+                    }
+                } header: {
+                    Text("Config");
+                } footer: {
+                    if !ankiManager.useAnkiConnect {
+                        Text("Importing a .colpkg backup from Anki will allow duplicate checks before sending to Anki. It's recommended to do this periodically to reduce drift.")
+                    }
+                }
+                
+                Section {
                     Toggle("Allow Duplicates", isOn: $ankiManager.allowDupes)
                         .onChange(of: ankiManager.allowDupes) { _, _ in ankiManager.save() }
                     
@@ -61,15 +75,14 @@ struct AnkiView: View {
                         .onChange(of: ankiManager.compactGlossaries) { _, _ in ankiManager.save() }
                     
                     if !ankiManager.useAnkiConnect {
-                        Button("Import .colpkg (Stored Words: \(ankiManager.savedWords.count.formatted(.number.grouping(.never))))") {
-                            isImporting = true
-                        }
+                        Toggle("Embed Dictionary Media", isOn: $ankiManager.embedMedia)
+                            .onChange(of: ankiManager.embedMedia) { _, _ in ankiManager.save() }
                     }
                 } header: {
-                    Text("Settings");
+                    Text("Settings")
                 } footer: {
                     if !ankiManager.useAnkiConnect {
-                        Text("Importing a .colpkg backup from Anki will allow duplicate checks before sending to Anki. It's recommended to do this periodically to reduce drift.")
+                        Text("Embedding media will increase size of glossaries (AnkiMobile).")
                     }
                 }
             }

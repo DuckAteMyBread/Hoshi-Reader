@@ -30,7 +30,8 @@ struct AnkiConfig: Codable {
     let selectedDeck: String?
     let selectedNoteType: String?
     let allowDupes: Bool
-    var compactGlossaries: Bool?
+    let compactGlossaries: Bool?
+    let embedMedia: Bool?
     let fieldMappings: [String: String]
     var tags: String?
     let availableDecks: [String]
