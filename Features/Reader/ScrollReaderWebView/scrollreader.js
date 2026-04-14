@@ -23,7 +23,7 @@ window.hoshiReader = {
     },
     
     countChars(text) {
-        return this.normalizeText(text).length;
+        return Array.from(this.normalizeText(text)).length;
     },
     
     normalizeText(text) {
@@ -142,13 +142,16 @@ window.hoshiReader = {
         const walker = this.createWalker();
         while (current && (node = walker.nextNode())) {
             const text = node.textContent;
-            for (let i = 0; i < text.length && current; i++) {
-                if (this.isMatchableChar(text[i])) {
+            let i = 0;
+            while (i < text.length && current) {
+                const char = String.fromCodePoint(text.codePointAt(i));
+                const next = i + char.length;
+                if (this.isMatchableChar(char)) {
                     if (cursor >= start && cursor < end) {
                         if (!segment) {
-                            segment = { id: current.id, start: i, end: i + 1 };
+                            segment = { id: current.id, start: i, end: next };
                         } else {
-                            segment.end = i + 1;
+                            segment.end = next;
                         }
                     } else {
                         flushSegment(node);
@@ -159,8 +162,9 @@ window.hoshiReader = {
                         advanceCue();
                     }
                 } else if (segment) {
-                    segment.end = i + 1;
+                    segment.end = next;
                 }
+                i = next;
             }
             flushSegment(node);
         }

@@ -291,15 +291,17 @@ window.hoshiSelection = {
                 break;
             }
             
-            const length = r.end - r.start;
-            const end = remaining >= length ? r.end : r.start + remaining;
+            let end = r.start;
+            while (end < r.end && remaining > 0) {
+                const char = String.fromCodePoint(r.node.textContent.codePointAt(end));
+                end += char.length;
+                remaining--;
+            }
             
             const range = document.createRange();
             range.setStart(r.node, r.start);
             range.setEnd(r.node, end);
             highlights.push(range);
-            
-            remaining -= length;
         }
         
         CSS.highlights?.set('hoshi-selection', new Highlight(...highlights));
@@ -308,10 +310,12 @@ window.hoshiSelection = {
     getNormalizedOffset(targetNode, offset) {
         let count = window.hoshiReader.nodeStartOffsets.get(targetNode) ?? 0;
         const text = targetNode.textContent;
-        for (let i = 0; i < offset; i++) {
-            if (window.hoshiReader.isMatchableChar(text[i])) {
+        for (let i = 0; i < offset;) {
+            const char = String.fromCodePoint(text.codePointAt(i));
+            if (window.hoshiReader.isMatchableChar(char)) {
                 count++;
             }
+            i += char.length;
         }
         return count;
     },
