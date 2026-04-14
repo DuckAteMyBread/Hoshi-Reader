@@ -126,7 +126,7 @@ window.hoshiSelection = {
     getSentence(startNode, startOffset) {
         const container = this.findParagraph(startNode) || document.body;
         const walker = this.createWalker(container);
-        const trailingSentenceChars = '」』）】!?！？…';
+        const trailingSentenceChars = '」』）】!?！？';
         
         walker.currentNode = startNode;
         const partsBefore = [];
