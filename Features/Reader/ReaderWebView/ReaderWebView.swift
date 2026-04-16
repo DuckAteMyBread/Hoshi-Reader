@@ -158,7 +158,8 @@ struct ReaderWebView: UIViewRepresentable {
                     let cue = context.coordinator.javaScriptStringLiteral(id)
                     webView.evaluateJavaScript("window.hoshiReader.highlightSasayakiCue(\(cue), \(revealFlag))") { result, _ in
                         if let progress = result as? Double {
-                            context.coordinator.parent.onSaveBookmark(progress)
+                            onPageTurn?()
+                            onSaveBookmark(progress)
                         }
                     }
                 case .clearSasayakiCue:
