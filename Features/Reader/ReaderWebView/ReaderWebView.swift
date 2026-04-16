@@ -66,10 +66,10 @@ struct ReaderWebView: UIViewRepresentable {
     var onSaveBookmark: (Double) -> Void
     var onInternalLink: (URL) -> Bool
     var onInternalJump: (Double) -> Void
-    var onTextSelected: ((SelectionData) -> Int?)?
-    var onTapOutside: (() -> Void)?
-    var onPageTurn: (() -> Void)?
-    var onRestoreCompleted: (() -> Void)?
+    var onTextSelected: ((SelectionData) -> Int?)
+    var onTapOutside: (() -> Void)
+    var onPageTurn: (() -> Void)
+    var onRestoreCompleted: (() -> Void)
     let maxSelectionLength: Int = 16
     
     func makeCoordinator() -> Coordinator {
@@ -158,7 +158,7 @@ struct ReaderWebView: UIViewRepresentable {
                     let cue = context.coordinator.javaScriptStringLiteral(id)
                     webView.evaluateJavaScript("window.hoshiReader.highlightSasayakiCue(\(cue), \(revealFlag))") { result, _ in
                         if let progress = result as? Double {
-                            onPageTurn?()
+                            onPageTurn()
                             onSaveBookmark(progress)
                         }
                     }
@@ -207,7 +207,7 @@ struct ReaderWebView: UIViewRepresentable {
                 UIView.animate(withDuration: 0.25) {
                     message.webView?.alpha = 1
                 }
-                parent.onRestoreCompleted?()
+                parent.onRestoreCompleted()
             }
             else if message.name == "textSelected" {
                 guard let body = message.body as? [String: Any],
@@ -224,7 +224,7 @@ struct ReaderWebView: UIViewRepresentable {
                 let normalizedOffset = body["normalizedOffset"] as? Int
                 let selectionData = SelectionData(text: text, sentence: sentence, rect: rect, normalizedOffset: normalizedOffset)
                 
-                if let highlightCount = parent.onTextSelected?(selectionData) {
+                if let highlightCount = parent.onTextSelected(selectionData) {
                     highlightSelection(count: highlightCount)
                 }
             }
@@ -521,7 +521,7 @@ struct ReaderWebView: UIViewRepresentable {
             guard let webView = webView else { return }
             
             clearHighlight()
-            parent.onPageTurn?()
+            parent.onPageTurn()
             
             let script = paginationScript(direction: direction)
             
@@ -568,7 +568,7 @@ struct ReaderWebView: UIViewRepresentable {
             
             webView.evaluateJavaScript(script) { result, _ in
                 if result is NSNull || result == nil {
-                    self.parent.onTapOutside?()
+                    self.parent.onTapOutside()
                 }
             }
         }

@@ -18,11 +18,11 @@ struct ScrollReaderWebView: UIViewRepresentable {
     var onSaveBookmark: (Double) -> Void
     var onInternalLink: (URL) -> Bool
     var onInternalJump: (Double) -> Void
-    var onTextSelected: ((SelectionData) -> Int?)?
-    var onTapOutside: (() -> Void)?
-    var onScroll: (() -> Void)?
-    var onProgressChanged: ((Double) -> Void)?
-    var onRestoreCompleted: (() -> Void)?
+    var onTextSelected: ((SelectionData) -> Int?)
+    var onTapOutside: (() -> Void)
+    var onScroll: (() -> Void)
+    var onProgressChanged: ((Double) -> Void)
+    var onRestoreCompleted: (() -> Void)
     let maxSelectionLength: Int = 16
     
     func makeCoordinator() -> Coordinator {
@@ -107,7 +107,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
                     let cue = context.coordinator.javaScriptStringLiteral(id)
                     webView.evaluateJavaScript("window.hoshiReader.highlightSasayakiCue(\(cue), \(revealFlag))") { result, _ in
                         if let progress = result as? Double {
-                            onScroll?()
+                            onScroll()
                             onSaveBookmark(progress)
                         }
                     }
@@ -160,7 +160,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
                 UIView.animate(withDuration: 0.25) {
                     message.webView?.alpha = 1
                 }
-                parent.onRestoreCompleted?()
+                parent.onRestoreCompleted()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
                     guard let self else { return }
                     self.webView?.scrollView.delegate = self
@@ -182,7 +182,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
                 let normalizedOffset = body["normalizedOffset"] as? Int
                 let selectionData = SelectionData(text: text, sentence: sentence, rect: rect, normalizedOffset: normalizedOffset)
                 
-                if let highlightCount = parent.onTextSelected?(selectionData) {
+                if let highlightCount = parent.onTextSelected(selectionData) {
                     highlightSelection(count: highlightCount)
                 }
             }
@@ -434,7 +434,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
             
             webView.evaluateJavaScript(script) { result, _ in
                 if result is NSNull || result == nil {
-                    self.parent.onTapOutside?()
+                    self.parent.onTapOutside()
                 }
             }
         }
@@ -551,12 +551,12 @@ struct ScrollReaderWebView: UIViewRepresentable {
         
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             guard !isRestoring else { return }
-            parent.onScroll?()
+            parent.onScroll()
             let now = CACurrentMediaTime()
             guard now - lastProgressUpdate >= 0.05 else { return }
             lastProgressUpdate = now
             fetchCurrentProgress { [weak self] progress in
-                self?.parent.onProgressChanged?(progress)
+                self?.parent.onProgressChanged(progress)
             }
         }
         
