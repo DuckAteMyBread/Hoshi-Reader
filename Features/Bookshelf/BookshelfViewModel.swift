@@ -209,138 +209,38 @@ class BookshelfViewModel {
         }
     }
     
-    private func determineSyncDirection(local: Bookmark?, ttuProgress: TtuProgress?) -> SyncDirection {
-        guard let local = local, let lastModified = local.lastModified else {
-            if ttuProgress != nil {
-                return .importFromTtu
-            } else {
-                return .synced
-            }
-        }
-        
-        guard let ttuProgress else {
-            return .exportToTtu
-        }
-        
-        if lastModified > ttuProgress.lastBookmarkModified {
-            return .exportToTtu
-        } else if ttuProgress.lastBookmarkModified > lastModified {
-            return .importFromTtu
-        } else {
-            return .synced
-        }
-    }
-    
     func syncBook(book: BookMetadata, direction: SyncDirection? = nil, syncStats: Bool, statsSyncMode: StatisticsSyncMode, syncAudioBook: Bool) {
-        guard let title = book.title,
-              let bookFolder = book.folder else { return }
-        
         isSyncing = true
         Task {
             defer {
                 isSyncing = false
             }
-            
             do {
-                let root = try await GoogleDriveHandler.shared.findRootFolder()
-                
-                // Ensure book folder exists on Google Drive (search by sanitized name, create if needed)
-                let coverPath = book.cover
-                let driveFolderId = try await GoogleDriveHandler.shared.ensureBookFolder(
-                    bookTitle: title,
-                    rootFolder: root,
-                    coverImageDataProvider: coverPath.map { path in
-                        return {
-                            guard let appDirectory = try? BookStorage.getAppDirectory() else { return nil }
-                            let coverURL = appDirectory.appendingPathComponent(path)
-                            guard FileManager.default.fileExists(atPath: coverURL.path(percentEncoded: false)) else { return nil }
-                            return try? Data(contentsOf: coverURL)
-                        }
-                    }
+                let result = try await SyncManager.shared.syncBook(
+                    book: book,
+                    direction: direction,
+                    syncStats: syncStats,
+                    statsSyncMode: statsSyncMode,
+                    syncAudioBook: syncAudioBook
                 )
-                
-                let directory = try BookStorage.getBooksDirectory()
-                let url = directory.appendingPathComponent(bookFolder)
-                let localBookmark = BookStorage.loadBookmark(root: url)
-                
-                let progressFileId = try await GoogleDriveHandler.shared.findProgressFileId(folderId: driveFolderId)
-                let ttuProgress: TtuProgress? = if let progressFileId {
-                    try await GoogleDriveHandler.shared.getProgressFile(fileId: progressFileId)
-                } else {
-                    nil
-                }
-                
-                var statsFileId: String?
-                var ttuStats: [Statistics]?
-                var localStats: [Statistics]?
-                if syncStats {
-                    localStats = BookStorage.loadStatistics(root: url)
-                    statsFileId = try await GoogleDriveHandler.shared.findStatsFileId(folderId: driveFolderId)
-                    ttuStats = if let statsFileId {
-                        try await GoogleDriveHandler.shared.getStatsFile(fileId: statsFileId)
-                    } else {
-                        nil
-                    }
-                }
-                
-                var audioBookFileId: String?
-                var ttuAudioBook: TtuAudioBook?
-                var playbackData: SasayakiPlaybackData?
-                if syncAudioBook {
-                    playbackData = BookStorage.loadSasayakiPlayback(root: url)
-                    audioBookFileId = try await GoogleDriveHandler.shared.findAudioBookFileId(folderId: driveFolderId)
-                    ttuAudioBook = if let audioBookFileId {
-                        try await GoogleDriveHandler.shared.getAudioBookFile(fileId: audioBookFileId)
-                    } else {
-                        nil
-                    }
-                }
-                
-                let syncDirection = direction ?? determineSyncDirection(local: localBookmark, ttuProgress: ttuProgress)
-                switch syncDirection {
-                case .importFromTtu:
-                    guard let ttuProgress else { return }
-                    importProgress(ttuProgress: ttuProgress, to: url)
-                    if syncStats {
-                        let mergedStats = mergeStatistics(localStatistics: localStats ?? [], externalStatistics: ttuStats ?? [], syncMode: statsSyncMode)
-                        if !mergedStats.isEmpty {
-                            try? BookStorage.save(mergedStats, inside: url, as: FileNames.statistics)
-                        }
-                    }
-                    if syncAudioBook, let ttuAudioBook {
-                        importAudioBook(ttuAudioBook: ttuAudioBook, to: url)
-                    }
-                    showSuccess(message: "Synced \(title) from ッツ\n\(ttuProgress.exploredCharCount) characters")
-                case .exportToTtu:
-                    guard let localBookmark else { return }
-                    try await exportProgress(
-                        localBookmark: localBookmark,
-                        ttuProgress: ttuProgress,
-                        folderId: driveFolderId,
-                        fileId: progressFileId,
-                        url: url
-                    )
-                    if syncStats {
-                        let mergedStats = mergeStatistics(localStatistics: ttuStats ?? [], externalStatistics: localStats ?? [], syncMode: statsSyncMode)
-                        if !mergedStats.isEmpty {
-                            try await GoogleDriveHandler.shared.updateStatsFile(folderId: driveFolderId, fileId: statsFileId, stats: mergedStats)
-                        }
-                    }
-                    if syncAudioBook, let playbackData {
-                        try await exportAudioBook(
-                            title: title,
-                            playbackData: playbackData,
-                            folderId: driveFolderId,
-                            fileId: audioBookFileId
-                        )
-                    }
-                    showSuccess(message: "Synced \(title) to ッツ\n\(localBookmark.characterCount) characters")
-                case .synced:
-                    showSuccess(message: "\(title) is already synced")
-                }
+                handleSyncResult(result)
             } catch {
                 showError(message: "Sync failed: \(error.localizedDescription)")
             }
+        }
+    }
+    
+    private func handleSyncResult(_ result: SyncResult) {
+        switch result {
+        case .synced(let title):
+            showSuccess(message: "\(title) is already synced")
+        case .imported(let title, let characterCount):
+            loadBookProgress()
+            showSuccess(message: "Synced \(title) from ッツ\n\(characterCount) characters")
+        case .exported(let title, let characterCount):
+            showSuccess(message: "Synced \(title) to ッツ\n\(characterCount) characters")
+        case .skipped:
+            break
         }
     }
     
@@ -412,94 +312,6 @@ class BookshelfViewModel {
         
         let root = books.appendingPathComponent(folder)
         return BookStorage.loadSasayakiMatch(root: root)
-    }
-    
-    private func importProgress(ttuProgress: TtuProgress, to url: URL) {
-        guard let bookInfo = BookStorage.loadBookInfo(root: url) else { return }
-        
-        let resolved = bookInfo.resolveCharacterPosition(ttuProgress.exploredCharCount)
-        
-        let bookmark = Bookmark(
-            chapterIndex: resolved?.spineIndex ?? 0,
-            progress: resolved?.progress ?? 0,
-            characterCount: ttuProgress.exploredCharCount,
-            lastModified: ttuProgress.lastBookmarkModified
-        )
-        
-        try? BookStorage.save(bookmark, inside: url, as: FileNames.bookmark)
-        loadBookProgress()
-    }
-    
-    private func exportProgress(localBookmark: Bookmark, ttuProgress: TtuProgress?, folderId: String, fileId: String?, url: URL) async throws {
-        guard let bookInfo = BookStorage.loadBookInfo(root: url),
-              let lastModified = localBookmark.lastModified else { return }
-        
-        let unixTimestamp = Int(lastModified.timeIntervalSince1970 * 1000)
-        let roundedDate = Date(timeIntervalSince1970: TimeInterval(unixTimestamp) / 1000.0)
-        
-        let progress = TtuProgress(
-            dataId: ttuProgress?.dataId ?? 0,
-            exploredCharCount: localBookmark.characterCount,
-            progress: Double(localBookmark.characterCount) / Double(bookInfo.characterCount),
-            lastBookmarkModified: roundedDate
-        )
-        
-        try await GoogleDriveHandler.shared.updateProgressFile(
-            folderId: folderId,
-            fileId: fileId,
-            progress: progress
-        )
-        
-        let bookmark = Bookmark(
-            chapterIndex: localBookmark.chapterIndex,
-            progress: localBookmark.progress,
-            characterCount: localBookmark.characterCount,
-            lastModified: roundedDate
-        )
-        try? BookStorage.save(bookmark, inside: url, as: FileNames.bookmark)
-    }
-    
-    private func mergeStatistics(localStatistics: [Statistics], externalStatistics: [Statistics], syncMode: StatisticsSyncMode) -> [Statistics] {
-        if syncMode == .replace {
-            return externalStatistics
-        }
-        
-        var grouped: [String: Statistics] = [:]
-        
-        for stat in localStatistics {
-            grouped[stat.dateKey] = stat
-        }
-        
-        for stat in externalStatistics {
-            if let existing = grouped[stat.dateKey] {
-                if stat.lastStatisticModified > existing.lastStatisticModified {
-                    grouped[stat.dateKey] = stat
-                }
-            } else {
-                grouped[stat.dateKey] = stat
-            }
-        }
-        
-        return Array(grouped.values)
-    }
-    
-    private func importAudioBook(ttuAudioBook: TtuAudioBook, to url: URL) {
-        var playback = BookStorage.loadSasayakiPlayback(root: url) ?? SasayakiPlaybackData(lastPosition: 0)
-        playback.lastPosition = ttuAudioBook.playbackPosition
-        try? BookStorage.save(playback, inside: url, as: FileNames.sasayakiPlayback)
-    }
-    
-    private func exportAudioBook(title: String, playbackData: SasayakiPlaybackData, folderId: String, fileId: String?) async throws {
-        let audioBook = TtuAudioBook(
-            title: title,
-            playbackPosition: playbackData.lastPosition,
-            lastAudioBookModified: Int(Date().timeIntervalSince1970 * 1000)
-        )
-        try await GoogleDriveHandler.shared.updateAudioBookFile(
-            folderId: folderId,
-            fileId: fileId,
-            audioBook: audioBook
-        )
     }
     
     private func processImport(sourceURL: URL) throws {

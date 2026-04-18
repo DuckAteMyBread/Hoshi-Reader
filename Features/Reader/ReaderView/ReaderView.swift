@@ -34,7 +34,17 @@ struct ReaderLoader: View {
     
     var body: some View {
         if let doc = viewModel.document, let root = viewModel.rootURL {
-            ReaderView(document: doc, rootURL: root, enableStatistics: userConfig.enableStatistics, autostartStatistics: userConfig.statisticsAutostartMode == .on)
+            ReaderView(
+                book: viewModel.book,
+                document: doc,
+                rootURL: root,
+                enableStatistics: userConfig.enableStatistics,
+                autostartStatistics: userConfig.statisticsAutostartMode == .on,
+                autoSyncEnabled: userConfig.enableSync && userConfig.enableAutoSync,
+                syncStats: userConfig.enableSync && userConfig.statisticsEnableSync,
+                statsSyncMode: userConfig.statisticsSyncMode,
+                syncAudioBook: userConfig.enableSasayaki && userConfig.sasayakiEnableSync
+            )
         }
     }
 }
@@ -46,6 +56,7 @@ struct ReaderView: View {
     @State private var viewModel: ReaderViewModel
     @State private var topSafeArea: CGFloat = UIApplication.topSafeArea
     @State private var focusMode = false
+    @State private var inactiveSince: Date?
     
     private let webViewPadding: CGFloat = 4
     private let lineHeight: CGFloat = 16
@@ -71,8 +82,42 @@ struct ReaderView: View {
         ))
     }
     
-    init(document: EPUBDocument, rootURL: URL, enableStatistics: Bool, autostartStatistics: Bool) {
-        _viewModel = State(initialValue: ReaderViewModel(document: document, rootURL: rootURL, enableStatistics: enableStatistics, autostartStatistics: autostartStatistics))
+    private func flushAutoSyncInBackground() {
+        var task: UIBackgroundTaskIdentifier = .invalid
+        task = UIApplication.shared.beginBackgroundTask {
+            UIApplication.shared.endBackgroundTask(task)
+            task = .invalid
+        }
+        
+        Task {
+            await viewModel.flushAutoSync()
+            UIApplication.shared.endBackgroundTask(task)
+            task = .invalid
+        }
+    }
+    
+    init(
+        book: BookMetadata,
+        document: EPUBDocument,
+        rootURL: URL,
+        enableStatistics: Bool,
+        autostartStatistics: Bool,
+        autoSyncEnabled: Bool,
+        syncStats: Bool,
+        statsSyncMode: StatisticsSyncMode,
+        syncAudioBook: Bool
+    ) {
+        _viewModel = State(initialValue: ReaderViewModel(
+            book: book,
+            document: document,
+            rootURL: rootURL,
+            enableStatistics: enableStatistics,
+            autostartStatistics: autostartStatistics,
+            autoSyncEnabled: autoSyncEnabled,
+            syncStats: syncStats,
+            statsSyncMode: statsSyncMode,
+            syncAudioBook: syncAudioBook
+        ))
     }
     
     private var progressString: String {
@@ -376,6 +421,18 @@ struct ReaderView: View {
             .monospacedDigit()
             .tracking(-0.4)
         }
+        .overlay {
+            if viewModel.isSyncing {
+                ZStack {
+                    Color.clear
+                        .contentShape(Rectangle())
+                    
+                    ProgressView()
+                        .controlSize(.regular)
+                        .tint(.secondary)
+                }
+            }
+        }
         .sheet(item: $viewModel.activeSheet) { item in
             switch item {
             case .appearance:
@@ -417,11 +474,21 @@ struct ReaderView: View {
                 }
             }
         }
+        .task {
+            await viewModel.syncOnOpen()
+        }
         .onChange(of: readerTextColor) { _, hex in viewModel.bridge.send(.updateTextColor(hex)) }
         .onChange(of: userConfig.sasayakiTextColor) { _, _ in updateSasayakiColors() }
         .onChange(of: userConfig.sasayakiBackgroundColor) { _, _ in updateSasayakiColors() }
         .onChange(of: userConfig.sasayakiAutoScroll) { _, _ in viewModel.sasayakiPlayer.updateIdleTimerDisabled() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            let shouldResync = inactiveSince.map { Date.now.timeIntervalSince($0) >= 600 } ?? false
+            inactiveSince = nil
+            if shouldResync {
+                Task {
+                    await viewModel.syncAfterForeground()
+                }
+            }
             guard viewModel.isTracking else {
                 return
             }
@@ -429,6 +496,8 @@ struct ReaderView: View {
             viewModel.isPaused = false
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            inactiveSince = .now
+            flushAutoSyncInBackground()
             guard viewModel.isTracking else {
                 return
             }
@@ -436,6 +505,9 @@ struct ReaderView: View {
         }
         .onDisappear {
             viewModel.sasayakiPlayer.teardown()
+            Task {
+                await viewModel.flushAutoSync()
+            }
         }
         .ignoresSafeArea(edges: .top)
         .ignoresSafeArea(.keyboard)

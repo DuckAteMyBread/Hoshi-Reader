@@ -114,12 +114,14 @@ class SasayakiPlayer {
     let bridge: WebViewBridge
     let loadChapter: (Int, Double) -> Void
     let getCurrentIndex: () -> Int
+    let onPlayback: () -> Void
     
-    init(rootURL: URL, bridge: WebViewBridge, loadChapter: @escaping (Int, Double) -> Void, getCurrentIndex: @escaping () -> Int) {
+    init(rootURL: URL, bridge: WebViewBridge, loadChapter: @escaping (Int, Double) -> Void, getCurrentIndex: @escaping () -> Int, onPlayback: @escaping () -> Void) {
         self.rootURL = rootURL
         self.bridge = bridge
         self.loadChapter = loadChapter
         self.getCurrentIndex = getCurrentIndex
+        self.onPlayback = onPlayback
         self.bookMetadata = BookStorage.loadMetadata(root: rootURL)
         
         matchData = BookStorage.loadSasayakiMatch(root: rootURL)
@@ -127,7 +129,11 @@ class SasayakiPlayer {
             return
         }
         timeline = CueTimeline(match: matchData)
-        
+        reloadPlayback()
+    }
+    
+    func reloadPlayback() {
+        guard hasMatch else { return }
         isRestoring = true
         playback = BookStorage.loadSasayakiPlayback(root: rootURL) ?? SasayakiPlaybackData(lastPosition: 0)
         currentTime = playback.lastPosition
@@ -362,6 +368,7 @@ class SasayakiPlayer {
             lastUpdate = second
             playback.lastPosition = seconds
             savePlayback()
+            onPlayback()
         }
         
         updateCue(for: seconds)
