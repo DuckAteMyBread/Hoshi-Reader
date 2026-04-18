@@ -487,14 +487,15 @@ struct ReaderWebView: UIViewRepresentable {
                 var images = document.querySelectorAll('img');
                 var imagePromises = Array.from(images).map(img => {
                     return new Promise(resolve => {
+                        const isGaiji = img.classList.contains('gaiji') || img.classList.contains('gaiji-line');
                         if (img.complete && img.naturalWidth > 0) {
-                            if (img.naturalWidth > 256 || img.naturalHeight > 256) {
+                            if (!isGaiji && (img.naturalWidth > 256 || img.naturalHeight > 256)) {
                                 img.classList.add('block-img');
                             }
                             resolve();
                         } else {
                             img.onload = () => {
-                                if (img.naturalWidth > 256 || img.naturalHeight > 256) {
+                                if (!isGaiji && (img.naturalWidth > 256 || img.naturalHeight > 256)) {
                                     img.classList.add('block-img');
                                 }
                                 resolve();
