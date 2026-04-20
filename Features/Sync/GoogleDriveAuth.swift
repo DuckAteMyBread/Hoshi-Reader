@@ -152,10 +152,9 @@ class GoogleDriveAuth: NSObject {
             "grant_type": "authorization_code"
         ]
         
-        request.httpBody = params
-            .map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
-            .joined(separator: "&")
-            .data(using: .utf8)
+        var bodyComponents = URLComponents()
+        bodyComponents.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
+        request.httpBody = bodyComponents.percentEncodedQuery?.data(using: .utf8)
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
