@@ -38,43 +38,43 @@ struct HighlightListView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
-                if highlights.isEmpty {
-                    ContentUnavailableView("No Highlights", systemImage: "highlighter")
-                } else {
-                    List {
-                        ForEach(sections) { section in
-                            Section(section.label) {
-                                ForEach(section.highlights) { highlight in
-                                    Button {
-                                        onJump(highlight)
-                                    } label: {
-                                        HStack(alignment: .top, spacing: 12) {
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(highlight.color.swatch)
-                                                .frame(width: 4)
-                                                .frame(maxHeight: .infinity)
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(highlight.text.trimmingCharacters(in: .whitespacesAndNewlines))
-                                                    .font(.body)
-                                                    .lineLimit(3)
-                                                Text("\(highlight.createdAt.formatted(date: .abbreviated, time: .shortened)) (\(highlight.character))")
-                                                    .font(.caption)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                        }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain)
+            List {
+                ForEach(sections) { section in
+                    Section(section.label) {
+                        ForEach(section.highlights) { highlight in
+                            Button {
+                                onJump(highlight)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(highlight.text.trimmingCharacters(in: .whitespacesAndNewlines))
+                                        .font(.body)
+                                        .lineLimit(5)
+                                    Text("\(highlight.createdAt.formatted(date: .abbreviated, time: .shortened)) (\(highlight.character))")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                 }
-                                .onDelete { indexSet in
-                                    indexSet.forEach { onDelete(section.highlights[$0]) }
+                                .padding(.leading, 16)
+                                .padding(.vertical, 4)
+                                .overlay(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(highlight.color.swatch)
+                                        .frame(width: 4)
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                             }
+                            .buttonStyle(.plain)
+                        }
+                        .onDelete { indexSet in
+                            indexSet.forEach { onDelete(section.highlights[$0]) }
                         }
                     }
-                    .listStyle(.grouped)
+                }
+            }
+            .listStyle(.grouped)
+            .overlay {
+                if highlights.isEmpty {
+                    ContentUnavailableView("No Highlights", systemImage: "highlighter")
                 }
             }
             .navigationTitle("Highlights")
