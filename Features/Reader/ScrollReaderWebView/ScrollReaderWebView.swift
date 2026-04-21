@@ -36,7 +36,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
         config.userContentController.add(context.coordinator, name: "restoreCompleted")
         config.defaultWebpagePreferences.preferredContentMode = .mobile
         
-        let webView = HoshiWKWebView(frame: .zero, configuration: config)
+        let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
@@ -46,11 +46,6 @@ struct ScrollReaderWebView: UIViewRepresentable {
         webView.scrollView.showsVerticalScrollIndicator = false
         webView.scrollView.showsHorizontalScrollIndicator = false
         webView.navigationDelegate = context.coordinator
-        
-        let coordinator = context.coordinator
-        webView.onHighlightCreated = { [weak coordinator] color, creation in
-            coordinator?.parent.onHighlightCreated(color, creation)
-        }
         
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         tap.delegate = context.coordinator
