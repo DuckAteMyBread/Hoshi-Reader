@@ -49,6 +49,8 @@ struct ScrollReaderWebView: UIViewRepresentable {
         
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         tap.delegate = context.coordinator
+        tap.cancelsTouchesInView = false
+        tap.delaysTouchesEnded = false
         webView.addGestureRecognizer(tap)
         
         context.coordinator.webView = webView

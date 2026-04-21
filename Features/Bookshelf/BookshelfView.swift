@@ -11,8 +11,59 @@ import EPUBKit
 import UniformTypeIdentifiers
 
 struct BookshelfView: View {
+    @Environment(UserConfig.self) private var userConfig
+    @Binding var pendingImportURL: URL?
+    @Binding var pendingRemoteImportURL: URL?
+    @Binding var pendingLookup: String?
+    @Binding var pendingTab: Int?
+    @State private var selectedBook: BookMetadata?
+    
+    var body: some View {
+        ZStack {
+            BookshelfTabsView(
+                selectedBook: $selectedBook,
+                pendingImportURL: $pendingImportURL,
+                pendingRemoteImportURL: $pendingRemoteImportURL,
+                pendingLookup: $pendingLookup,
+                pendingTab: $pendingTab
+            )
+            .zIndex(0)
+            
+            if let selectedBook {
+                ReaderLoader(book: selectedBook)
+                    .environment(userConfig)
+                    .environment(\.dismissReader) {
+                        self.selectedBook = nil
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
+        }
+        .animation(Animation.easeInOut(duration: 0.16), value: selectedBook != nil)
+        .onChange(of: pendingImportURL) { _, url in
+            closeReader(for: url)
+        }
+        .onChange(of: pendingRemoteImportURL) { _, url in
+            closeReader(for: url)
+        }
+        .onChange(of: pendingLookup) { _, text in
+            closeReader(for: text)
+        }
+        .onChange(of: pendingTab) { _, tab in
+            closeReader(for: tab)
+        }
+    }
+    
+    private func closeReader<Value>(for value: Value?) {
+        if value != nil && selectedBook != nil {
+            selectedBook = nil
+        }
+    }
+}
+
+private struct BookshelfTabsView: View {
     @Environment(\.colorScheme) private var systemColorScheme
-    @Environment(UserConfig.self) var userConfig
+    @Environment(UserConfig.self) private var userConfig
     @State private var viewModel = BookshelfViewModel()
     @State private var showDictionaries = false
     @State private var showAnkiSettings = false
@@ -29,6 +80,7 @@ struct BookshelfView: View {
     @State private var selectedBooks = Set<BookMetadata>()
     @State private var showBulkDeleteConfirmation = false
     @State private var sasayakiBook: BookMetadata?
+    @Binding var selectedBook: BookMetadata?
     @Binding var pendingImportURL: URL?
     @Binding var pendingRemoteImportURL: URL?
     @Binding var pendingLookup: String?
@@ -61,6 +113,7 @@ struct BookshelfView: View {
                                         section: section,
                                         showTitle: sections.count > 1,
                                         isSelecting: isSelecting,
+                                        selectedBook: $selectedBook,
                                         selectedBooks: $selectedBooks,
                                         pendingLookup: $pendingLookup,
                                         pendingTab: $pendingTab,

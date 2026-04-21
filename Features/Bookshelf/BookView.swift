@@ -58,17 +58,15 @@ struct BookCover: View {
     
     private var cover: some View {
         VStack(spacing: progress == nil ? 0 : 3) {
-            AsyncImage(url: book.coverURL) { phase in
-                if let image = phase.image {
-                    image
-                        .resizable()
-                        .aspectRatio(coverAspectRatio, contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: innerCornerRadius, style: .continuous))
-                } else {
-                    RoundedRectangle(cornerRadius: innerCornerRadius, style: .continuous)
-                        .fill(Color.gray.opacity(0.3))
-                        .aspectRatio(coverAspectRatio, contentMode: .fit)
-                }
+            CoverImage(url: book.coverURL, maxPixelSize: 768) { image in
+                image
+                    .resizable()
+                    .aspectRatio(coverAspectRatio, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: innerCornerRadius, style: .continuous))
+            } placeholder: {
+                RoundedRectangle(cornerRadius: innerCornerRadius, style: .continuous)
+                    .fill(Color.gray.opacity(0.3))
+                    .aspectRatio(coverAspectRatio, contentMode: .fit)
             }
             .overlay(alignment: .topTrailing) {
                 if isSelected {
@@ -86,7 +84,7 @@ struct BookCover: View {
             if let progress {
                 HStack(spacing: 8) {
                     ProgressView(value: progress)
-                         .tint(.secondary.opacity(0.4))
+                        .tint(.secondary.opacity(0.4))
                     Text(String(format: "%.1f%%", progress * 100))
                         .font(.caption2)
                         .fontWeight(.medium)

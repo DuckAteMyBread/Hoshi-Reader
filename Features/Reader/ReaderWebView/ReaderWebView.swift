@@ -155,17 +155,23 @@ struct ReaderWebView: UIViewRepresentable {
         let swipeLeft = UISwipeGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleSwipeLeft(_:)))
         swipeLeft.direction = .left
         swipeLeft.delegate = context.coordinator
+        swipeLeft.cancelsTouchesInView = false
+        swipeLeft.delaysTouchesEnded = false
         webView.addGestureRecognizer(swipeLeft)
         
         let swipeRight = UISwipeGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleSwipeRight(_:)))
         swipeRight.direction = .right
         swipeRight.delegate = context.coordinator
+        swipeRight.cancelsTouchesInView = false
+        swipeRight.delaysTouchesEnded = false
         webView.addGestureRecognizer(swipeRight)
         
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         tap.delegate = context.coordinator
         tap.require(toFail: swipeLeft)
         tap.require(toFail: swipeRight)
+        tap.cancelsTouchesInView = false
+        tap.delaysTouchesEnded = false
         webView.addGestureRecognizer(tap)
         
         context.coordinator.webView = webView

@@ -9,15 +9,13 @@
 import SwiftUI
 
 struct ShelfView: View {
-    @Environment(UserConfig.self) var userConfig
-    @State private var selectedBook: BookMetadata?
-    @State private var readerWindow = ReaderWindow()
     @State private var isCollapsed: Bool
     @State private var compactRowCount = 4
     var viewModel: BookshelfViewModel
     var section: ShelfSection
     var showTitle: Bool = true
     var isSelecting: Bool = false
+    @Binding var selectedBook: BookMetadata?
     @Binding var selectedBooks: Set<BookMetadata>
     @Binding var pendingLookup: String?
     @Binding var pendingTab: Int?
@@ -34,6 +32,7 @@ struct ShelfView: View {
         section: ShelfSection,
         showTitle: Bool = true,
         isSelecting: Bool = false,
+        selectedBook: Binding<BookMetadata?>,
         selectedBooks: Binding<Set<BookMetadata>>,
         pendingLookup: Binding<String?>,
         pendingTab: Binding<Int?>,
@@ -43,6 +42,7 @@ struct ShelfView: View {
         self.section = section
         self.showTitle = showTitle
         self.isSelecting = isSelecting
+        self._selectedBook = selectedBook
         self._selectedBooks = selectedBooks
         self._pendingLookup = pendingLookup
         self._pendingTab = pendingTab
@@ -122,21 +122,6 @@ struct ShelfView: View {
                     }
                 }
                 .padding(.horizontal)
-            }
-        }
-        .onChange(of: selectedBook) { old, new in
-            if let book = new {
-                readerWindow.present(content: {
-                    ReaderLoader(book: book)
-                        .environment(userConfig)
-                }) {
-                    if selectedBook?.id == book.id {
-                        selectedBook = nil
-                    }
-                }
-            } else if old != nil {
-                readerWindow.dismiss()
-                viewModel.loadBooks()
             }
         }
         .onChange(of: pendingLookup) { _, text in
