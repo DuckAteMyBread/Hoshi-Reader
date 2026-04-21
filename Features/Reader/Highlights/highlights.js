@@ -32,6 +32,13 @@ window.hoshiHighlights = {
         this.wrapHighlight({ id, color, offset: rawStart, text });
         window.hoshiReader.buildNodeOffsets();
         
+        requestAnimationFrame(() => {
+            document.body.style.transform = 'translateZ(0)';
+            requestAnimationFrame(() => {
+                document.body.style.transform = '';
+            });
+        });
+        
         return { start, offset: rawStart, text };
     },
     
@@ -117,5 +124,12 @@ window.hoshiHighlights = {
         window.hoshiReader.unwrap(wrappers);
         this.wrappers.delete(id);
         window.hoshiReader.buildNodeOffsets();
+        
+        requestAnimationFrame(() => {
+            document.body.style.transform = 'translateZ(0)';
+            requestAnimationFrame(() => {
+                document.body.style.transform = '';
+            });
+        });
     }
 };

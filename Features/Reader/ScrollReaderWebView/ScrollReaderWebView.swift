@@ -34,9 +34,10 @@ struct ScrollReaderWebView: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         config.userContentController.add(context.coordinator, name: "textSelected")
         config.userContentController.add(context.coordinator, name: "restoreCompleted")
+        config.userContentController.add(context.coordinator, name: "selectionState")
         config.defaultWebpagePreferences.preferredContentMode = .mobile
         
-        let webView = WKWebView(frame: .zero, configuration: config)
+        let webView = HoshiWKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
@@ -46,6 +47,11 @@ struct ScrollReaderWebView: UIViewRepresentable {
         webView.scrollView.showsVerticalScrollIndicator = false
         webView.scrollView.showsHorizontalScrollIndicator = false
         webView.navigationDelegate = context.coordinator
+        
+        let coordinator = context.coordinator
+        webView.onHighlightCreated = { [weak coordinator] color, creation in
+            coordinator?.parent.onHighlightCreated(color, creation)
+        }
         
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         tap.delegate = context.coordinator
@@ -142,6 +148,7 @@ struct ScrollReaderWebView: UIViewRepresentable {
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "textSelected")
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "restoreCompleted")
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "selectionState")
     }
     
     class Coordinator: NSObject, WKNavigationDelegate, UIGestureRecognizerDelegate, WKScriptMessageHandler, UIScrollViewDelegate {
@@ -161,6 +168,12 @@ struct ScrollReaderWebView: UIViewRepresentable {
         }
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            if message.name == "selectionState" {
+                if let hasSelection = message.body as? Bool, let hv = message.webView as? HoshiWKWebView {
+                    hv.hasSelection = hasSelection
+                }
+                return
+            }
             if message.name == "restoreCompleted" {
                 if shouldSyncProgressAfterRestore {
                     shouldSyncProgressAfterRestore = false

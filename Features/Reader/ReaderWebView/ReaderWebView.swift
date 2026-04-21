@@ -73,10 +73,12 @@ class WebViewBridge {
 
 final class HoshiWKWebView: WKWebView {
     var onHighlightCreated: ((HighlightColor, HighlightData) -> Void)?
+    var hasSelection: Bool = false
     
     // https://stackoverflow.com/a/78488754
     override func buildMenu(with builder: UIMenuBuilder) {
         super.buildMenu(with: builder)
+        guard hasSelection else { return }
         let children = HighlightColor.allCases.map { color in
             let swatch = UIImage(systemName: "circle.fill")?.withTintColor(UIColor(color.swatch), renderingMode: .alwaysOriginal)
             return UIAction(title: color.rawValue.capitalized, image: swatch) { [weak self] _ in
@@ -138,6 +140,7 @@ struct ReaderWebView: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         config.userContentController.add(context.coordinator, name: "textSelected")
         config.userContentController.add(context.coordinator, name: "restoreCompleted")
+        config.userContentController.add(context.coordinator, name: "selectionState")
         config.defaultWebpagePreferences.preferredContentMode = .mobile
         
         let webView = HoshiWKWebView(frame: .zero, configuration: config)
@@ -257,6 +260,7 @@ struct ReaderWebView: UIViewRepresentable {
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "textSelected")
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "restoreCompleted")
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "selectionState")
     }
     
     class Coordinator: NSObject, WKNavigationDelegate, UIGestureRecognizerDelegate, WKScriptMessageHandler {
@@ -274,6 +278,12 @@ struct ReaderWebView: UIViewRepresentable {
         }
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            if message.name == "selectionState" {
+                if let hasSelection = message.body as? Bool, let hv = message.webView as? HoshiWKWebView {
+                    hv.hasSelection = hasSelection
+                }
+                return
+            }
             if message.name == "restoreCompleted" {
                 if shouldSyncProgressAfterRestore {
                     shouldSyncProgressAfterRestore = false

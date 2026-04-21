@@ -326,3 +326,9 @@ window.hoshiSelection = {
         this.selection = null;
     }
 };
+
+document.addEventListener('selectionchange', () => {
+    const s = getSelection();
+    const hasSelection = !!s && !s.isCollapsed;
+    try { window.webkit?.messageHandlers?.selectionState?.postMessage(hasSelection); } catch {}
+});
