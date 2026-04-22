@@ -208,27 +208,26 @@ window.hoshiSelection = {
             }
         }
 
-        while (stack.length > 0 && sentence.length > 0) {
-            const first = sentence[0];
+        let startSlice = 0;
+        while (stack.length > 0 && startSlice < sentence.length - 1) {
             // Stack consists of unmatched open brackets arranged from start to end
-            if (stack[0] === first) {
-                sentence = sentence.slice(1);
+            if (stack[0] === sentence[startSlice]) {
                 stack.shift();
-            } else if (this.trailingSentenceChars.includes(first)) {
-                sentence = sentence.slice(1);
             } else break;
+            startSlice++;
         }
 
-        while (unmatchedClose.length > 0 && sentence.length > 0) {
-            const last = sentence[sentence.length - 1];
-            if (unmatchedClose[unmatchedClose.length - 1] === last) {
-                sentence = sentence.slice(0, -1);        
+        let endSlice = sentence.length - 1;
+        let endIdx = sentence.length - 1;
+        while (unmatchedClose.length > 0 && endIdx > startSlice) {
+            if (unmatchedClose[unmatchedClose.length - 1] === sentence[endIdx]) {     
                 unmatchedClose.pop();
-            } else if (this.sentenceDelimiters.includes(last)) {
-                sentence = sentence.slice(0, -1);
-            } else break;
+                endSlice = endIdx - 1;
+            // sentenceDelimiters used as trailingSentenceDelimiters as it does not have any overlap with brackets
+            } else if (!this.sentenceDelimiters.includes(sentence[endIdx])) break;
+            endIdx--;
         }
-        return sentence.trim();
+        return sentence.slice(startSlice, endSlice + 1).trim();
     },
     
     selectText(x, y, maxLength) {
