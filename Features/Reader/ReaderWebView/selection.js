@@ -167,7 +167,7 @@ window.hoshiSelection = {
             for (let i = start; i < text.length; i++) {
                 if (this.sentenceDelimiters.includes(text[i])) {
                     let end = i + 1;
-
+                    
                     while (end < text.length) {
                         if (!this.trailingSentenceChars.includes(text[end])) break;
                         end += 1;
@@ -234,19 +234,18 @@ window.hoshiSelection = {
         const hit = this.getCharacterAtPoint(x, y);
         
         if (!hit) {
-            this.clearHighlight();
+            this.clearSelection();
             return null;
         }
         
-        // Dismiss popup if tapping on the first character of the current selection
         if (this.selection &&
             hit.node === this.selection.startNode &&
             hit.offset === this.selection.startOffset) {
-            this.clearHighlight();
+            this.clearSelection();
             return null;
         }
         
-        this.clearHighlight();
+        this.clearSelection();
         
         const container = this.findParagraph(hit.node) || document.body;
         const walker = this.createWalker(container);
@@ -294,10 +293,12 @@ window.hoshiSelection = {
         };
         
         const sentence = this.getSentence(hit.node, hit.offset);
+        const normalizedOffset = window.hoshiReader ? this.getNormalizedOffset(hit.node, hit.offset) : null;
         webkit.messageHandlers.textSelected.postMessage({
             text,
             sentence,
-            rect: this.getSelectionRect(x, y)
+            rect: this.getSelectionRect(x, y),
+            normalizedOffset
         });
         
         return text;
@@ -331,23 +332,47 @@ window.hoshiSelection = {
                 break;
             }
             
-            const length = r.end - r.start;
-            const end = remaining >= length ? r.end : r.start + remaining;
+            let end = r.start;
+            while (end < r.end && remaining > 0) {
+                const char = String.fromCodePoint(r.node.textContent.codePointAt(end));
+                end += char.length;
+                remaining--;
+            }
             
             const range = document.createRange();
             range.setStart(r.node, r.start);
             range.setEnd(r.node, end);
             highlights.push(range);
-            
-            remaining -= length;
         }
         
         CSS.highlights?.set('hoshi-selection', new Highlight(...highlights));
     },
     
-    clearHighlight() {
+    getNormalizedOffset(targetNode, offset) {
+        let count = window.hoshiReader.nodeStartOffsets.get(targetNode) ?? 0;
+        const text = targetNode.textContent;
+        for (let i = 0; i < offset;) {
+            const char = String.fromCodePoint(text.codePointAt(i));
+            if (window.hoshiReader.isMatchableChar(char)) {
+                count++;
+            }
+            i += char.length;
+        }
+        return count;
+    },
+    
+    clearSelection() {
         window.getSelection()?.removeAllRanges();
-        CSS.highlights?.clear();
+        CSS.highlights?.get('hoshi-selection')?.clear();
         this.selection = null;
     }
 };
+
+let lastHasSelection = false;
+document.addEventListener('selectionchange', () => {
+    const s = getSelection();
+    const hasSelection = !!s && !s.isCollapsed;
+    if (hasSelection === lastHasSelection) return;
+    lastHasSelection = hasSelection;
+    try { window.webkit?.messageHandlers?.selectionState?.postMessage(hasSelection); } catch {}
+});

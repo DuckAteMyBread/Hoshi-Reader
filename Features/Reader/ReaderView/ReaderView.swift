@@ -17,6 +17,7 @@ struct WebViewState: Hashable {
     var horizontalPadding: Int
     var verticalPadding: Int
     var avoidPageBreak: Bool
+    var justifyText: Bool
     var layoutAdvanced: Bool
     var lineHeight: Double
     var characterSpacing: Double
@@ -33,7 +34,17 @@ struct ReaderLoader: View {
     
     var body: some View {
         if let doc = viewModel.document, let root = viewModel.rootURL {
-            ReaderView(document: doc, rootURL: root, enableStatistics: userConfig.enableStatistics, autostartStatistics: userConfig.statisticsAutostartMode == .on)
+            ReaderView(
+                book: viewModel.book,
+                document: doc,
+                rootURL: root,
+                enableStatistics: userConfig.enableStatistics,
+                autostartStatistics: userConfig.statisticsAutostartMode == .on,
+                autoSyncEnabled: userConfig.enableSync && userConfig.enableAutoSync,
+                syncStats: userConfig.enableSync && userConfig.statisticsEnableSync,
+                statsSyncMode: userConfig.statisticsSyncMode,
+                syncAudioBook: userConfig.enableSasayaki && userConfig.sasayakiEnableSync
+            )
         }
     }
 }
@@ -45,6 +56,7 @@ struct ReaderView: View {
     @State private var viewModel: ReaderViewModel
     @State private var topSafeArea: CGFloat = UIApplication.topSafeArea
     @State private var focusMode = false
+    @State private var inactiveSince: Date?
     
     private let webViewPadding: CGFloat = 4
     private let lineHeight: CGFloat = 16
@@ -63,8 +75,49 @@ struct ReaderView: View {
         userConfig.theme == .custom ? UIColor(userConfig.customTextColor).hexString : nil
     }
     
-    init(document: EPUBDocument, rootURL: URL, enableStatistics: Bool, autostartStatistics: Bool) {
-        _viewModel = State(initialValue: ReaderViewModel(document: document, rootURL: rootURL, enableStatistics: enableStatistics, autostartStatistics: autostartStatistics))
+    private func updateSasayakiColors() {
+        viewModel.bridge.send(.updateSasayakiColors(
+            textHex: UIColor(userConfig.sasayakiTextColor).hexString,
+            backgroundHex: UIColor(userConfig.sasayakiBackgroundColor).hexString
+        ))
+    }
+    
+    private func flushAutoSyncInBackground() {
+        var task: UIBackgroundTaskIdentifier = .invalid
+        task = UIApplication.shared.beginBackgroundTask {
+            UIApplication.shared.endBackgroundTask(task)
+            task = .invalid
+        }
+        
+        Task {
+            await viewModel.flushAutoSync()
+            UIApplication.shared.endBackgroundTask(task)
+            task = .invalid
+        }
+    }
+    
+    init(
+        book: BookMetadata,
+        document: EPUBDocument,
+        rootURL: URL,
+        enableStatistics: Bool,
+        autostartStatistics: Bool,
+        autoSyncEnabled: Bool,
+        syncStats: Bool,
+        statsSyncMode: StatisticsSyncMode,
+        syncAudioBook: Bool
+    ) {
+        _viewModel = State(initialValue: ReaderViewModel(
+            book: book,
+            document: document,
+            rootURL: rootURL,
+            enableStatistics: enableStatistics,
+            autostartStatistics: autostartStatistics,
+            autoSyncEnabled: autoSyncEnabled,
+            syncStats: syncStats,
+            statsSyncMode: statsSyncMode,
+            syncAudioBook: syncAudioBook
+        ))
     }
     
     private var progressString: String {
@@ -95,11 +148,14 @@ struct ReaderView: View {
         // if you tab out and tab back in, the area recalculates causing the reader to be misaligned
         VStack(spacing: 0) {
             Color.clear
-                .frame(height: max(topSafeArea, 25) + webViewPadding + (userConfig.readerShowProgressTop && !progressString.isEmpty ? lineHeight : 0) + (userConfig.readerShowTitle ? lineHeight : 0))
+                .frame(height: max(topSafeArea, 25) + webViewPadding + (userConfig.readerShowProgressTop && !progressString.isEmpty ? lineHeight : 0) +
+                       (userConfig.readerShowTitle || (userConfig.enableStatistics && userConfig.readerShowStatisticsToggle)
+                        || (userConfig.enableSasayaki && userConfig.readerShowSasayakiToggle && viewModel.sasayakiPlayer.hasAudio) ? lineHeight : 0))
                 .contentShape(Rectangle())
             
             GeometryReader { geometry in
                 ZStack {
+                    let viewSize = CGSize(width: geometry.size.width.rounded(), height: (geometry.size.height + (userConfig.verticalWriting ? CGFloat(userConfig.fontSize) : 0)).rounded())
                     if userConfig.continuousMode {
                         ScrollReaderWebView(
                             userConfig: userConfig,
@@ -119,7 +175,12 @@ struct ReaderView: View {
                                 if userConfig.statisticsAutostartMode == .pageturn && !viewModel.isTracking {
                                     viewModel.startTracking()
                                 }
-                            }
+                            },
+                            onProgressChanged: viewModel.updateProgress,
+                            onRestoreCompleted: {
+                                viewModel.handleRestoreCompleted()
+                            },
+                            onHighlightCreated: viewModel.addHighlight
                         )
                         .id(WebViewState(
                             verticalWriting: userConfig.verticalWriting,
@@ -129,15 +190,17 @@ struct ReaderView: View {
                             horizontalPadding: userConfig.horizontalPadding,
                             verticalPadding: userConfig.verticalPadding,
                             avoidPageBreak: userConfig.avoidPageBreak,
+                            justifyText: userConfig.justifyText,
                             layoutAdvanced: userConfig.layoutAdvanced,
                             lineHeight: userConfig.lineHeight,
                             characterSpacing: userConfig.characterSpacing,
                             size: geometry.size,
                         ))
+                        .frame(width: viewSize.width, height: viewSize.height)
                     } else {
                         ReaderWebView(
                             userConfig: userConfig,
-                            viewSize: CGSize(width: geometry.size.width.rounded(), height: geometry.size.height.rounded()),
+                            viewSize: viewSize,
                             bridge: viewModel.bridge,
                             onNextChapter: viewModel.nextChapter,
                             onPreviousChapter: viewModel.previousChapter,
@@ -154,7 +217,11 @@ struct ReaderView: View {
                                 if userConfig.statisticsAutostartMode == .pageturn && !viewModel.isTracking {
                                     viewModel.startTracking()
                                 }
-                            }
+                            },
+                            onRestoreCompleted: {
+                                viewModel.handleRestoreCompleted()
+                            },
+                            onHighlightCreated: viewModel.addHighlight
                         )
                         .id(WebViewState(
                             verticalWriting: userConfig.verticalWriting,
@@ -164,11 +231,13 @@ struct ReaderView: View {
                             horizontalPadding: userConfig.horizontalPadding,
                             verticalPadding: userConfig.verticalPadding,
                             avoidPageBreak: userConfig.avoidPageBreak,
+                            justifyText: userConfig.justifyText,
                             layoutAdvanced: userConfig.layoutAdvanced,
                             lineHeight: userConfig.lineHeight,
                             characterSpacing: userConfig.characterSpacing,
                             size: geometry.size,
                         ))
+                        .frame(width: viewSize.width, height: viewSize.height)
                     }
                     
                     ForEach($viewModel.popups) { $popup in
@@ -184,7 +253,7 @@ struct ReaderView: View {
                             isFullWidth: popup.isFullWidth,
                             coverURL: viewModel.coverURL,
                             documentTitle: viewModel.document.title,
-                            clearHighlight: popup.clearHighlight,
+                            clearSelection: popup.clearSelection,
                             onTextSelected: {
                                 if let index = viewModel.popups.firstIndex(where: { $0.id == popupId }) {
                                     viewModel.closeChildPopups(parent: index)
@@ -202,15 +271,23 @@ struct ReaderView: View {
                                     return
                                 }
                                 if index == 0 {
-                                    viewModel.clearWebHighlight()
+                                    viewModel.clearSelection()
                                     viewModel.closePopups()
                                 } else if viewModel.popups.indices.contains(index - 1) {
-                                    viewModel.popups[index - 1].clearHighlight.toggle()
+                                    viewModel.popups[index - 1].clearSelection.toggle()
                                     viewModel.closeChildPopups(parent: index - 1)
                                 }
-                            }
+                            },
+                            sasayakiCue: popup.sasayakiCue,
+                            sasayakiPlayer: viewModel.sasayakiPlayer
                         )
                         .zIndex(Double(100 + (viewModel.popups.firstIndex(where: { $0.id == popupId }) ?? 0)))
+                    }
+                    
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .controlSize(.regular)
+                            .tint(.secondary)
                     }
                 }
             }
@@ -229,15 +306,21 @@ struct ReaderView: View {
                 
                 Menu {
                     Button {
+                        viewModel.activeSheet = .appearance
+                    } label: {
+                        Label("Appearance", systemImage: "paintpalette")
+                    }
+                    
+                    Button {
                         viewModel.activeSheet = .chapters
                     } label: {
                         Label("Chapters", systemImage: "list.bullet")
                     }
                     
                     Button {
-                        viewModel.activeSheet = .appearance
+                        viewModel.activeSheet = .highlights
                     } label: {
-                        Label("Appearance", systemImage: "paintbrush.pointed")
+                        Label("Highlights", systemImage: "highlighter")
                     }
                     
                     if userConfig.enableStatistics {
@@ -245,6 +328,14 @@ struct ReaderView: View {
                             viewModel.activeSheet = .statistics
                         } label: {
                             Label("Statistics", systemImage: "chart.xyaxis.line")
+                        }
+                    }
+                    
+                    if userConfig.enableSasayaki && viewModel.sasayakiPlayer.hasMatch {
+                        Button {
+                            viewModel.activeSheet = .sasayaki
+                        } label: {
+                            Label("Sasayaki", systemImage: "waveform")
                         }
                     }
                 } label: {
@@ -271,7 +362,7 @@ struct ReaderView: View {
                             Text(title)
                                 .font(.subheadline)
                                 .foregroundStyle(userConfig.theme == .custom ? AnyShapeStyle(userConfig.customInfoColor.opacity(0.5)) : AnyShapeStyle(.tertiary))
-                                .padding(.horizontal, 30)
+                                .padding(.horizontal, (userConfig.readerShowStatisticsToggle && userConfig.enableStatistics || userConfig.readerShowSasayakiToggle && userConfig.enableSasayaki && viewModel.sasayakiPlayer.hasAudio) ? 45 : 30)
                                 .lineLimit(1)
                         }
                     }
@@ -285,6 +376,40 @@ struct ReaderView: View {
                 }
             }
             .padding(.top, max(topSafeArea, 25))
+        }
+        .overlay(alignment: .topLeading) {
+            if userConfig.enableStatistics && userConfig.readerShowStatisticsToggle {
+                Button {
+                    if viewModel.isTracking {
+                        viewModel.stopTracking()
+                    } else {
+                        viewModel.startTracking()
+                    }
+                } label: {
+                    Image(systemName: viewModel.isTracking ? "timer" : "chart.xyaxis.line")
+                        .font(.subheadline)
+                        .frame(width: 24, height: lineHeight)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(userConfig.theme == .custom ? AnyShapeStyle(userConfig.customInfoColor) : AnyShapeStyle(.secondary))
+                .padding(.top, max(topSafeArea, 25))
+                .padding(.leading, 15)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if userConfig.enableSasayaki && userConfig.readerShowSasayakiToggle && viewModel.sasayakiPlayer.hasAudio {
+                Button {
+                    viewModel.sasayakiPlayer.togglePlayback()
+                } label: {
+                    Image(systemName: viewModel.sasayakiPlayer.isPlaying ? "pause.fill" : "waveform")
+                        .font(.subheadline)
+                        .frame(width: 24, height: lineHeight)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(userConfig.theme == .custom ? AnyShapeStyle(userConfig.customInfoColor) : AnyShapeStyle(.secondary))
+                .padding(.top, max(topSafeArea, 25))
+                .padding(.trailing, 15)
+            }
         }
         .overlay(alignment: .bottom) {
             VStack {
@@ -304,6 +429,18 @@ struct ReaderView: View {
             .monospacedDigit()
             .tracking(-0.4)
         }
+        .overlay {
+            if viewModel.isSyncing {
+                ZStack {
+                    Color.clear
+                        .contentShape(Rectangle())
+                    
+                    ProgressView()
+                        .controlSize(.regular)
+                        .tint(.secondary)
+                }
+            }
+        }
         .sheet(item: $viewModel.activeSheet) { item in
             switch item {
             case .appearance:
@@ -314,17 +451,40 @@ struct ReaderView: View {
                 ChapterListView(document: viewModel.document, bookInfo: viewModel.bookInfo, currentIndex: viewModel.index, currentCharacter: viewModel.currentCharacter, coverURL: viewModel.coverURL) { spineIndex, fragment in
                     viewModel.jumpToChapter(index: spineIndex, fragment: fragment)
                     viewModel.activeSheet = nil
-                    viewModel.clearWebHighlight()
+                    viewModel.clearSelection()
                     viewModel.closePopups()
                 } onJumpToCharacter: { count in
                     viewModel.jumpToCharacter(count)
                     viewModel.activeSheet = nil
-                    viewModel.clearWebHighlight()
+                    viewModel.clearSelection()
                     viewModel.closePopups()
                 }
+            case .highlights:
+                HighlightListView(
+                    document: viewModel.document,
+                    bookInfo: viewModel.bookInfo,
+                    highlights: viewModel.highlights,
+                    onJump: { highlight in
+                        viewModel.jumpToCharacter(highlight.character)
+                        viewModel.activeSheet = nil
+                        viewModel.clearSelection()
+                        viewModel.closePopups()
+                    },
+                    onDelete: { highlight in
+                        viewModel.removeHighlight(highlight)
+                    }
+                )
+                .presentationDetents([.medium, .large])
             case .statistics:
                 StatisticsView(viewModel: viewModel)
                     .presentationDetents([.medium, .large])
+            case .sasayaki:
+                SasayakiSheet(player: viewModel.sasayakiPlayer, onImportAudio: { url in
+                    try viewModel.importSasayakiAudio(from: url)
+                }) {
+                    viewModel.activeSheet = nil
+                }
+                .presentationDetents([.medium])
             }
         }
         .task(id: viewModel.isTracking) {
@@ -338,21 +498,40 @@ struct ReaderView: View {
                 }
             }
         }
-        .onChange(of: readerTextColor) { _, hex in
-            viewModel.bridge.send(.updateTextColor(hex))
+        .task {
+            await viewModel.syncOnOpen()
         }
+        .onChange(of: readerTextColor) { _, hex in viewModel.bridge.send(.updateTextColor(hex)) }
+        .onChange(of: userConfig.sasayakiTextColor) { _, _ in updateSasayakiColors() }
+        .onChange(of: userConfig.sasayakiBackgroundColor) { _, _ in updateSasayakiColors() }
+        .onChange(of: userConfig.sasayakiAutoScroll) { _, _ in viewModel.sasayakiPlayer.updateIdleTimerDisabled() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            let shouldResync = inactiveSince.map { Date.now.timeIntervalSince($0) >= 600 } ?? false
+            inactiveSince = nil
+            if shouldResync {
+                Task {
+                    await viewModel.syncAfterForeground()
+                }
+            }
             guard viewModel.isTracking else {
                 return
             }
-            viewModel.lastTimestamp = .now
+            viewModel.resetTrackingBaseline()
             viewModel.isPaused = false
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            inactiveSince = .now
+            flushAutoSyncInBackground()
             guard viewModel.isTracking else {
                 return
             }
             viewModel.isPaused = true
+        }
+        .onDisappear {
+            viewModel.sasayakiPlayer.teardown()
+            Task {
+                await viewModel.flushAutoSync()
+            }
         }
         .ignoresSafeArea(edges: .top)
         .ignoresSafeArea(.keyboard)
